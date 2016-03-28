@@ -6,13 +6,13 @@ class Memory;
 class Cpu
 {
 public:
-    Cpu();
-    ~Cpu();
+	Cpu();
+	~Cpu();
 
-    void Reset();
-    bool Step();
+	void Reset();
+	bool Step();
 
-    Memory * AttachedMemory;
+	Memory * AttachedMemory;
 };
 
 #endif

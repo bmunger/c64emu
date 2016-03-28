@@ -6,15 +6,15 @@ class Video;
 class Memory
 {
 public:
-    Memory();
-    ~Memory();
+	Memory();
+	~Memory();
 
-    void Reset();
+	void Reset();
 
-    void Write8(int Address, unsigned char Data8);
-    unsigned char Read8(int Address);
+	void Write8(int Address, unsigned char Data8);
+	unsigned char Read8(int Address);
 
-    Video * AttachedVideo;
+	Video * AttachedVideo;
 };
 
 #endif

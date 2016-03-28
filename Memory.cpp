@@ -22,5 +22,5 @@ void Memory::Write8(int Address, unsigned char Data8)
 
 unsigned char Memory::Read8(int Address)
 {
-    return 0xFF;
+	return 0xFF;
 }

@@ -3,13 +3,13 @@
 
 Emulation::Emulation() : SystemCpu(), SystemMemory(), SystemVideo()
 {
-    // connect
-    SystemVideo.AttachedCpu = &SystemCpu;
-    SystemVideo.AttachedMemory = &SystemMemory;
-    SystemMemory.AttachedVideo = &SystemVideo;
-    SystemCpu.AttachedMemory = &SystemMemory;
+	// connect
+	SystemVideo.AttachedCpu = &SystemCpu;
+	SystemVideo.AttachedMemory = &SystemMemory;
+	SystemMemory.AttachedVideo = &SystemVideo;
+	SystemCpu.AttachedMemory = &SystemMemory;
 
-    Reset();
+	Reset();
 }
 
 
@@ -20,22 +20,22 @@ Emulation::~Emulation()
 
 void Emulation::Reset()
 {
-    SystemCpu.Reset();
-    SystemMemory.Reset();
-    SystemVideo.Reset();
+	SystemCpu.Reset();
+	SystemMemory.Reset();
+	SystemVideo.Reset();
 }
 
 void Emulation::Run()
 {
-    while (true)
-    {
-        bool success = SystemCpu.Step();
-        if (!success)
-        {
-            return;
-        }
+	while (true)
+	{
+		bool success = SystemCpu.Step();
+		if (!success)
+		{
+			return;
+		}
 
-        SystemVideo.VideoStep();
-    }
+		SystemVideo.VideoStep();
+	}
 
 }

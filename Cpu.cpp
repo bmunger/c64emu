@@ -17,5 +17,5 @@ void Cpu::Reset()
 
 bool Cpu::Step()
 {
-    return false; // CPU does not recognize this instruction.
+	return false; // CPU does not recognize this instruction.
 }

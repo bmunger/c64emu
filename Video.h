@@ -7,14 +7,14 @@ class Cpu;
 class Video
 {
 public:
-    Video();
-    ~Video();
+	Video();
+	~Video();
 
-    void Reset();
-    void VideoStep();
+	void Reset();
+	void VideoStep();
 
-    Memory * AttachedMemory;
-    Cpu * AttachedCpu;
+	Memory * AttachedMemory;
+	Cpu * AttachedCpu;
 };
 
 #endif

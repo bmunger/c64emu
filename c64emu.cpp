@@ -24,11 +24,11 @@ int main(int argc, char* argv[])
 	}
 
 	/* Begin emulation */
-    Emulation emu;
+	Emulation emu;
 
-    emu.Run();
+	emu.Run();
 
-    SDL_Delay(3000);
+	SDL_Delay(3000);
 
 	/* End emulation */
 	SDL_DestroyWindow(main_window);

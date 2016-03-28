@@ -8,15 +8,15 @@
 class Emulation
 {
 public:
-    Emulation();
-    ~Emulation();
+	Emulation();
+	~Emulation();
 
-    void Reset();
-    void Run();
+	void Reset();
+	void Run();
 
-    Video SystemVideo;
-    Memory SystemMemory;
-    Cpu SystemCpu;
+	Video SystemVideo;
+	Memory SystemMemory;
+	Cpu SystemCpu;
 };
 
 #endif
