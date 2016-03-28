@@ -20,9 +20,10 @@ Emulation::~Emulation()
 
 void Emulation::Reset()
 {
-	SystemCpu.Reset();
 	SystemMemory.Reset();
 	SystemVideo.Reset();
+	// Reset CPU last, it loads from memory.
+	SystemCpu.Reset();
 }
 
 void Emulation::Run()

@@ -15,6 +15,16 @@ public:
 	unsigned char Read8(int Address);
 
 	Video * AttachedVideo;
+
+
+protected:
+	unsigned char EffectivePR();
+
+	unsigned char DDR, PR;
+	unsigned char * RAM;
+	unsigned char * Kernal;
+	unsigned char * Basic;
+
 };
 
 #endif

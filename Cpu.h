@@ -13,6 +13,16 @@ public:
 	bool Step();
 
 	Memory * AttachedMemory;
+
+protected:
+
+	unsigned short PC; // Program counter
+	unsigned char S; // Stack pointer
+	unsigned char P; // Processor status
+	unsigned char A; // Accumulator
+	unsigned char X; // Index register X
+	unsigned char Y; // Index register Y
+
 };
 
 #endif
