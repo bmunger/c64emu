@@ -1,5 +1,6 @@
 #include "c64emu.h"
 #include <stdio.h>
+#include "Emulation.h"
 
 int main(int argc, char* argv[])
 {
@@ -22,9 +23,12 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	SDL_Delay(3000);
-
 	/* Begin emulation */
+    Emulation emu;
+
+    emu.Run();
+
+    SDL_Delay(3000);
 
 	/* End emulation */
 	SDL_DestroyWindow(main_window);
