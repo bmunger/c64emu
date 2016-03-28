@@ -1,3 +1,3 @@
 #!/bin/bash
 
-g++ *.cpp -o c64emu -lSDL2
+g++ src/*.cpp -o c64emu -lSDL2
