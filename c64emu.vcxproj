@@ -80,21 +80,21 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="c64emu.cpp" />
-    <ClCompile Include="Cpu.cpp" />
-    <ClCompile Include="Emulation.cpp" />
-    <ClCompile Include="Memory.cpp" />
-    <ClCompile Include="Video.cpp" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="c64emu.h" />
-    <ClInclude Include="Cpu.h" />
-    <ClInclude Include="Emulation.h" />
-    <ClInclude Include="Memory.h" />
-    <ClInclude Include="Video.h" />
+    <ClCompile Include="src\c64emu.cpp" />
+    <ClCompile Include="src\Cpu.cpp" />
+    <ClCompile Include="src\Emulation.cpp" />
+    <ClCompile Include="src\Memory.cpp" />
+    <ClCompile Include="src\Video.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\c64emu.h" />
+    <ClInclude Include="src\Cpu.h" />
+    <ClInclude Include="src\Emulation.h" />
+    <ClInclude Include="src\Memory.h" />
+    <ClInclude Include="src\Video.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
