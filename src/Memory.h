@@ -17,13 +17,22 @@ public:
 	Video * AttachedVideo;
 
 
-protected:
-	unsigned char EffectivePR();
-
-	unsigned char DDR, PR;
 	unsigned char * RAM;
 	unsigned char * Kernal;
 	unsigned char * Basic;
+	unsigned char * Char;
+
+protected:
+
+	const unsigned char LORAM = 1;
+	const unsigned char HIRAM = 2;
+	const unsigned char CHAREN = 4;
+
+	unsigned char EffectivePR();
+
+	unsigned char DDR, PR;
+
+	unsigned char * LoadRom(const char * Filename, int Size);
 
 };
 
