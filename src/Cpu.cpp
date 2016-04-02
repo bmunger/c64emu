@@ -49,7 +49,7 @@ bool Cpu::Step()
 	// 0x01 row (Indirect, X)
 
 	case 0x01: TRACE_INSTRUCTION("ORA");
-		A = A | LoadInstructionByte();
+		A = A | Load(LoadInstructionByte() + X);
 		SetResultFlags(A);
 		break;
 
