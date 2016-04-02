@@ -24,8 +24,12 @@ protected:
 	unsigned char Y; // Index register Y
 
 	unsigned char Load(unsigned short Address);
+	unsigned short Load16(unsigned short Address);
 
 	void SetResultFlags(unsigned char Result);
+
+	unsigned char Add(unsigned char Add1, unsigned char Add2, int Carry);
+	unsigned char Sub(unsigned char Sub1, unsigned char Sub2, int Carry);
 
 	void SetFlag(unsigned char Flag);
 	void ClearFlag(unsigned char Flag);
@@ -39,7 +43,7 @@ protected:
 	unsigned char Pop();
 
 	unsigned char LoadInstructionByte();
-
+	unsigned short LoadInstructionShort();
 
 	// Bit flags
 	const unsigned char NFlag = 0x80; // Negative. Set to the top bit of the result of an operation.

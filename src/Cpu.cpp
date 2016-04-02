@@ -22,7 +22,7 @@ void Cpu::Reset()
 	S = 0xFF;
 	X = 0;
 	Y = 0;
-	PC = (AttachedMemory->Read8(0xFFFC)) | (AttachedMemory->Read8(0xFFFD) << 8);
+	PC = Load16(0xFFFC);
 }
 
 bool Cpu::Step()
@@ -44,6 +44,23 @@ bool Cpu::Step()
 		temp2 = LoadInstructionByte();
 		SetLow(PC, temp); // Can't modify PC until after we load all the bytes for the instruction.
 		SetHigh(PC, temp2);
+		break;
+
+
+	case 0x60: TRACE_INSTRUCTION("RTS"); // Return from subroutine
+		temp = Pop();
+		temp2 = Pop();
+		SetLow(PC, temp);
+		SetHigh(PC, temp2);
+		PC++;
+		break;
+
+	case 0xD0: TRACE_INSTRUCTION("BNE");
+		if ((P&ZFlag) == 0)
+		{
+			temp = LoadInstructionByte();
+			PC += (char)temp; // Signed offset
+		}
 		break;
 
 	// 0x01 row (Indirect, X)
@@ -86,6 +103,12 @@ bool Cpu::Step()
 		break;
 
 
+	// 0x0A row
+
+	case 0xCA: TRACE_INSTRUCTION("DEX"); // Decrement X
+		X--;
+		SetResultFlags(X);
+		break;
 
 
 	// 0x18 row
@@ -126,11 +149,14 @@ bool Cpu::Step()
 
 	// 0x1D row (Absolute, X)
 
-	case 0xBD: TRACE_INSTRUCTION("LDA"); // Load a from [x]
-		A = Load(X);
+	case 0xBD: TRACE_INSTRUCTION("LDA"); // Load a from [Immediate16+X]
+		A = Load(LoadInstructionShort() + X);
 		SetResultFlags(A);
 		break;
 
+	case 0xDD: TRACE_INSTRUCTION("CMP"); // Compare A with [Immediate16+X]
+		Sub(A, Load(LoadInstructionShort() + X), 0);
+		break;
 
 	default:
 		TRACE_INSTRUCTION("Unrecognized Instruction");
@@ -149,6 +175,11 @@ unsigned char Cpu::Load(unsigned short Address)
 	return AttachedMemory->Read8(Address);
 }
 
+unsigned short Cpu::Load16(unsigned short Address)
+{
+	return (AttachedMemory->Read8(Address)) | (AttachedMemory->Read8(Address + 1) << 8);
+}
+
 // Set N/Z based on result.
 void Cpu::SetResultFlags(unsigned char Result)
 {
@@ -159,6 +190,48 @@ void Cpu::SetResultFlags(unsigned char Result)
 	{
 		P |= ZFlag;
 	}
+}
+
+// Add 2 8-bit numbers together and set flags. Only set Overflow flag if adding with carry.
+unsigned char Cpu::Add(unsigned char Add1, unsigned char Add2, int Carry)
+{
+	// Preserve information so we can identify the carry into and carry out of the top bit.
+	int c = 0;
+	if (Carry != 0)
+		c = (P&CFlag) == 0 ? 0 : Carry; // Todo: this probably needs to change slightly for borrow.
+
+	int temp1 = (Add1 & 0x7F) + (Add2 & 0x7F) + c; // Carry in is temp1 & 0x80
+	int temp2 = Add1 + Add2 + c; // Carry out is temp2 & 0x100
+	unsigned char Result = temp2 & 0xFF;
+
+	P = P & ~(ZFlag | NFlag | CFlag);
+	P |= (Result & 0x80); // N flag
+	if (Result == 0)
+	{
+		P |= ZFlag;
+	}
+	if (temp2 & 0x100) // Carry out
+	{
+		P |= CFlag;
+	}
+
+	if (Carry != 0)
+	{
+		// Also set overflow flag
+		P &= ~VFlag;
+		temp1 = (temp1 & 0x80) >> 7;
+		temp2 = (temp2 & 0x100) >> 8;
+		if (temp1 != temp2)
+		{
+			P |= VFlag;
+		}
+	}
+	return Result;
+}
+// Subtract 2 8-bit numbers and set flags
+unsigned char Cpu::Sub(unsigned char Sub1, unsigned char Sub2, int Carry)
+{
+	return Add(Sub1, -Sub2, -Carry);
 }
 
 void Cpu::SetFlag(unsigned char Flag)
@@ -200,7 +273,14 @@ unsigned char Cpu::Pop()
 
 unsigned char Cpu::LoadInstructionByte()
 {
-	unsigned char byte = AttachedMemory->Read8(PC);
+	unsigned char byte = Load(PC);
 	PC++;
 	return byte;
+}
+
+unsigned short Cpu::LoadInstructionShort()
+{
+	unsigned short data = Load16(PC);
+	PC += 2;
+	return data;
 }
