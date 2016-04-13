@@ -1,7 +1,3 @@
-
-// Todo: move off of c stdlib file functions.
-#define _CRT_SECURE_NO_WARNINGS 1
-
 #include "Memory.h"
 #include "Video.h"
 #include <stdio.h>

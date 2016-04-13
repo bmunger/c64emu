@@ -2,9 +2,30 @@
 #include "Memory.h"
 #include <stdio.h>
 
-// Intended to be used in Cpu::Step
-#define TRACE_INSTRUCTION(message) printf("PC=%04X: %02X A=%02X P=%02X S=%02X X=%02X Y=%02X : %s\n", instructionPC, instruction, A, P, S, X, Y, (message))
 
+#define TRACE_CPU_INSTRUCTIONS 1
+
+
+#define TRACE_INSTRUCTION_COMMON(message) printf("PC=%04X: %02X A=%02X P=%02X S=%02X X=%02X Y=%02X : %s\n", instructionPC, instruction, A, P, S, X, Y, (message))
+
+
+#if TRACE_CPU_INSTRUCTIONS
+// Intended to be used in Cpu::Step
+#define TRACE_INSTRUCTION(message) TRACE_INSTRUCTION_COMMON(message)
+#define TRACE_SPRINTF sprintf
+
+#else
+#define TRACE_INSTRUCTION(message)
+#define TRACE_SPRINTF ignore_args
+
+static void ignore_args(...)
+{
+
+}
+
+#endif
+
+#define TRACE_UNDEFINED(message) TRACE_INSTRUCTION_COMMON(message)
 
 Cpu::Cpu()
 {
@@ -46,7 +67,7 @@ bool Cpu::Step()
 		temp2 = LoadInstructionByte();
 		SetLow(PC, temp); // Can't modify PC until after we load all the bytes for the instruction.
 		SetHigh(PC, temp2);
-		sprintf(disasm,"JSR $%02X%02X", temp2, temp);
+		TRACE_SPRINTF(disasm, "JSR $%02X%02X", temp2, temp);
 		TRACE_INSTRUCTION(disasm);
 		break;
 
@@ -65,7 +86,7 @@ bool Cpu::Step()
 			temp = LoadInstructionByte();
 			PC += (char)temp; // Signed offset
 		}
-		sprintf(disasm,"BNE $%04X,X", PC);
+		TRACE_SPRINTF(disasm, "BNE $%04X,X", PC);
 		TRACE_INSTRUCTION(disasm);
 		break;
 
@@ -81,7 +102,7 @@ bool Cpu::Step()
 	case 0xA2: //TRACE_INSTRUCTION("LDX"); // Load X (from immediate)
 		X = LoadInstructionByte();
 		SetResultFlags(X);
-		sprintf(disasm,"LDX #$%02X",X);
+		TRACE_SPRINTF(disasm, "LDX #$%02X", X);
 		TRACE_INSTRUCTION(disasm);
 		break;
 
@@ -89,7 +110,7 @@ bool Cpu::Step()
 	case 0x85: // Store A
 		temp = LoadInstructionByte();
 		AttachedMemory->Write8(temp, A);
-		sprintf(disasm, "STA $%02X", temp);
+		TRACE_SPRINTF(disasm, "STA $%02X", temp);
 		TRACE_INSTRUCTION(disasm);
 		break;
 
@@ -119,7 +140,7 @@ bool Cpu::Step()
 
 	case 0xA9: //Load Accumulator
 		A = LoadInstructionByte();
-		sprintf(disasm,"LDA #$%02X", A);
+		TRACE_SPRINTF(disasm, "LDA #$%02X", A);
 		TRACE_INSTRUCTION(disasm);
 		break;
 
@@ -135,7 +156,7 @@ bool Cpu::Step()
 	case 0x8D: // Store A
 		stemp = LoadInstructionShort();
 		AttachedMemory->Write8(stemp, A);
-		sprintf(disasm,"STA $%04X", stemp);
+		TRACE_SPRINTF(disasm, "STA $%04X", stemp);
 		TRACE_INSTRUCTION(disasm);
 		break;
 
@@ -143,7 +164,7 @@ bool Cpu::Step()
 	case 0x8E: // Store X
 		stemp = LoadInstructionShort();
 		AttachedMemory->Write8(stemp, X);
-		sprintf(disasm,"STX $%04X", stemp);
+		TRACE_SPRINTF(disasm, "STX $%04X", stemp);
 		TRACE_INSTRUCTION(disasm);
 		break;
 
@@ -190,7 +211,7 @@ bool Cpu::Step()
 		//A = Load(LoadInstructionShort() + X);
 		A = Load(stemp) + X;
 		SetResultFlags(A);
-		sprintf(disasm,"LDA $%04X,X", stemp);
+		TRACE_SPRINTF(disasm, "LDA $%04X,X", stemp);
 		TRACE_INSTRUCTION(disasm);
 		break;
 
@@ -198,12 +219,12 @@ bool Cpu::Step()
 		stemp = LoadInstructionShort();
 		//Sub(A, Load(LoadInstructionShort() + X), 0);
 		Sub(A, Load(stemp + X), 0);
-		sprintf(disasm,"CMP $%04X,X", stemp);
+		TRACE_SPRINTF(disasm, "CMP $%04X,X", stemp);
 		TRACE_INSTRUCTION(disasm);
 		break;
 
 	default:
-		TRACE_INSTRUCTION("Unrecognized Instruction");
+		TRACE_UNDEFINED("Unrecognized Instruction");
 		return false; // CPU does not recognize this instruction.
 
 	}
