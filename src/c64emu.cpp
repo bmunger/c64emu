@@ -26,11 +26,25 @@ int main(int argc, char* argv[])
 	/* Begin emulation */
 	Emulation emu;
 
-	emu.Run();
+	emu.SetupRendering(main_window);
 
-	SDL_Delay(3000);
+	while (1) {
+		SDL_Event e;
+		if (SDL_PollEvent(&e)) {
+			if (e.type == SDL_QUIT) {
+				break;
+			}
+		}
+
+		emu.RunCycles(1000);
+
+		emu.UpdateVideo();
+
+		SDL_Delay(1);
+	}
 
 	/* End emulation */
+	emu.TeardownRendering();
 	SDL_DestroyWindow(main_window);
 	SDL_Quit();
 	return 0;

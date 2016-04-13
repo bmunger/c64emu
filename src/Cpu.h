@@ -14,6 +14,9 @@ public:
 
 	Memory * AttachedMemory;
 
+	bool Running;
+	long long Cycle;
+
 protected:
 
 	unsigned short PC; // Program counter

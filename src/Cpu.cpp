@@ -44,6 +44,8 @@ void Cpu::Reset()
 	X = 0;
 	Y = 0;
 	PC = Load16(0xFFFC);
+	Cycle = 0;
+	Running = true;
 }
 
 bool Cpu::Step()
@@ -54,6 +56,11 @@ bool Cpu::Step()
 	unsigned char temp, temp2;
 	unsigned short stemp;
 	char disasm[16];
+
+	if (!Running)
+	{
+		return false;
+	}
 
 	instruction = LoadInstructionByte(); 
 
@@ -225,12 +232,13 @@ bool Cpu::Step()
 
 	default:
 		TRACE_UNDEFINED("Unrecognized Instruction");
+		Running = false;
 		return false; // CPU does not recognize this instruction.
 
 	}
 
 
-
+	Cycle += 2; // All instructions take two cycles at least. Additional cycles are often due to memory access.
 
 	return true;
 }

@@ -1,6 +1,7 @@
 #ifndef _EMULATION_H
 #define _EMULATION_H
 
+#include "SDL.h"
 #include "Video.h"
 #include "Memory.h"
 #include "Cpu.h"
@@ -12,7 +13,11 @@ public:
 	~Emulation();
 
 	void Reset();
-	void Run();
+	void RunCycles(int CycleCount);
+
+	void SetupRendering(SDL_Window* Target);
+	void TeardownRendering();
+	void UpdateVideo();
 
 	Video SystemVideo;
 	Memory SystemMemory;

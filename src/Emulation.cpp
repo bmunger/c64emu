@@ -26,9 +26,10 @@ void Emulation::Reset()
 	SystemCpu.Reset();
 }
 
-void Emulation::Run()
+void Emulation::RunCycles(int CycleCount)
 {
-	while (true)
+	long long targetCycle = SystemCpu.Cycle + CycleCount;
+	while (SystemCpu.Cycle < targetCycle)
 	{
 		bool success = SystemCpu.Step();
 		if (!success)
@@ -39,4 +40,17 @@ void Emulation::Run()
 		SystemVideo.VideoStep();
 	}
 
+}
+
+void Emulation::SetupRendering(SDL_Window* Target)
+{
+	SystemVideo.SetupRendering(Target);
+}
+void Emulation::TeardownRendering()
+{
+	SystemVideo.TeardownRendering();
+}
+void Emulation::UpdateVideo()
+{
+	SystemVideo.UpdateVideo();
 }
