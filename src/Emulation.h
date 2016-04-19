@@ -1,7 +1,7 @@
 #ifndef _EMULATION_H
 #define _EMULATION_H
 
-#include "SDL.h"
+#include "c64emu.h"
 #include "Video.h"
 #include "Memory.h"
 #include "Cpu.h"

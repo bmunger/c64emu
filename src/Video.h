@@ -1,7 +1,7 @@
 #ifndef _VIDEO_H
 #define _VIDEO_H
 
-#include "SDL.h"
+#include "c64emu.h"
 class Memory;
 class Cpu;
 

@@ -87,13 +87,24 @@ bool Cpu::Step()
 		PC++;
 		break;
 
+	case 0xA0: // LDY Immediate
+		temp = LoadInstructionByte();
+		TRACE_SPRINTF(disasm, "LDY #$%02X", temp);
+		TRACE_INSTRUCTION(disasm);
+		Y = temp;
+		SetResultFlags(Y);
+		break;
+
 	case 0xD0: //TRACE_INSTRUCTION("BNE");
+		temp = LoadInstructionByte();
+		stemp = PC + (char)temp;
 		if ((P&ZFlag) == 0)
 		{
-			temp = LoadInstructionByte();
-			PC += (char)temp; // Signed offset
+			//temp = LoadInstructionByte();
+			//PC += (char)temp; // Signed offset
+			PC = stemp;
 		}
-		TRACE_SPRINTF(disasm, "BNE $%04X,X", PC);
+		TRACE_SPRINTF(disasm, "BNE $%04X,X", stemp);
 		TRACE_INSTRUCTION(disasm);
 		break;
 
@@ -121,6 +132,31 @@ bool Cpu::Step()
 		TRACE_INSTRUCTION(disasm);
 		break;
 
+	// 0x06 row
+
+	case 0x84: // Store Y (Zeropage)
+		temp = LoadInstructionByte();
+		TRACE_SPRINTF(disasm, "STY $%02X", temp);
+		TRACE_INSTRUCTION(disasm);
+		AttachedMemory->Write8(temp, Y);
+		break;
+
+	case 0x86: // Store X (Zeropage)
+		temp = LoadInstructionByte();
+		TRACE_SPRINTF(disasm, "STX $%02X", temp);
+		TRACE_INSTRUCTION(disasm);
+		AttachedMemory->Write8(temp, X);
+		break;
+
+	case 0xE6: // Increase (Zeropage)
+		temp = LoadInstructionByte();
+		TRACE_SPRINTF(disasm, "INC $%02X", temp);
+		TRACE_INSTRUCTION(disasm);
+		temp2 = AttachedMemory->Read8(temp) + 1;
+		AttachedMemory->Write8(temp, temp2);
+		SetResultFlags(temp2);
+		break;
+
 	// 0x08 row
 
 	case 0x08: TRACE_INSTRUCTION("PHP"); // Push P
@@ -140,7 +176,35 @@ bool Cpu::Step()
 		SetResultFlags(A);
 		break;
 
+	case 0xA8: // Transfer A to Y
+		TRACE_INSTRUCTION("TAY");
+		Y = A;
+		SetResultFlags(Y);
+		break;
+
+	case 0xC8: // Increase Y
+		TRACE_INSTRUCTION("INY");
+		Y++;
+		SetResultFlags(Y);
+		break;
+
 	// 0x09 row
+
+	case 0x09: // OR on A
+		temp = LoadInstructionByte();
+		TRACE_SPRINTF(disasm, "ORA #$%02X", temp);
+		TRACE_INSTRUCTION(disasm);
+		A = A | temp;
+		SetResultFlags(A);
+		break;
+
+	case 0x29: // AND
+		temp = LoadInstructionByte();
+		TRACE_SPRINTF(disasm, "AND #$%02X", temp);
+		TRACE_INSTRUCTION(disasm);
+		A = A & temp;
+		SetResultFlags(A);
+		break;
 
 	case 0x89: TRACE_INSTRUCTION("NOP"); // Undocumented NOP
 		break;
@@ -153,9 +217,24 @@ bool Cpu::Step()
 
 	// 0x0A row
 
+	case 0xAA: // Transfer A to X
+		TRACE_INSTRUCTION("TAX");
+		X = A;
+		SetResultFlags(X);
+		break;
+
 	case 0xCA: TRACE_INSTRUCTION("DEX"); // Decrement X
 		X--;
 		SetResultFlags(X);
+		break;
+
+	// 0x0C row
+
+	case 0x4C: // Jump (direct)
+		stemp = LoadInstructionShort();
+		TRACE_SPRINTF(disasm, "JMP $%04X", stemp);
+		TRACE_INSTRUCTION(disasm);
+		PC = stemp;
 		break;
 
 	// 0x0D row
@@ -167,12 +246,46 @@ bool Cpu::Step()
 		TRACE_INSTRUCTION(disasm);
 		break;
 
+	case 0xAD: // Load A
+		stemp = LoadInstructionShort();
+		TRACE_SPRINTF(disasm, "LDA $%04X", stemp);
+		TRACE_INSTRUCTION(disasm);
+		A = Load(stemp);
+		SetResultFlags(A);
+		break;
+
 	// 0x0E row
 	case 0x8E: // Store X
 		stemp = LoadInstructionShort();
 		AttachedMemory->Write8(stemp, X);
 		TRACE_SPRINTF(disasm, "STX $%04X", stemp);
 		TRACE_INSTRUCTION(disasm);
+		break;
+
+	// 0x10 row
+	case 0xF0: // Branch if Equal
+		stemp = PC + (char)LoadInstructionByte() + 1;
+		TRACE_SPRINTF(disasm, "BEQ $%04X", stemp);
+		TRACE_INSTRUCTION(disasm);
+		if ( (P&ZFlag) == ZFlag)
+			PC = stemp;
+		break;
+
+	// 0x11 row
+
+	case 0x91: // Store A (Indirect-indexed)
+		temp = LoadInstructionByte();
+		TRACE_SPRINTF(disasm, "STA ($%02X),Y", temp);
+		TRACE_INSTRUCTION(disasm);
+		AttachedMemory->Write8(Load16(temp) + Y, A);
+		break;
+
+	case 0xB1: // Load A (Indirect-indexed)
+		temp = LoadInstructionByte();
+		TRACE_SPRINTF(disasm, "LDA ($%02X),Y", temp);
+		TRACE_INSTRUCTION(disasm);
+		A = Load(Load16(temp) + Y);
+		SetResultFlags(A);
 		break;
 
 	// 0x18 row
@@ -204,6 +317,14 @@ bool Cpu::Step()
 		SetFlag(DFlag);
 		break;
 
+	// 0x19 row
+
+	case 0x99:
+		stemp = LoadInstructionShort();
+		TRACE_SPRINTF(disasm, "STA $%04X,Y", stemp);
+		TRACE_INSTRUCTION(disasm);
+		AttachedMemory->Write8(stemp + Y, A);
+		break;
 
 	// 0x1A row 
 
