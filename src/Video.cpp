@@ -43,12 +43,12 @@ void Video::Reset()
 
 	for (int i = 0; i < 64; i++)
 	{
-		Registers[i] = 0xFF;
+		Registers[i] = i;
 	}
 
 	for (int i = 0; i < 1024; i++)
 	{
-		ColorRam[i] = 0xFF;
+		ColorRam[i] = i;
 	}
 
 	UpdateMode();
@@ -126,7 +126,7 @@ void Video::VideoStep()
 
 			int VC = (tileX + tileY * 40) & 0x3FF; // This won't emulate the VC "Video counter" very well for advanced usage, but for simple text will be fine.
 
-			int tileColor = ColorRam[VC];
+			int tileColor = ColorRam[VC] & 0x0F;
 			int character = ReadVicMemory(VC | (VM << 10));
 
 			int row = renderY & 7; // Which row in the tile to fetch.

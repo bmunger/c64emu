@@ -71,7 +71,7 @@ void Memory::Write8(int Address, unsigned char Data8)
 			if (tempPR & CHAREN)
 			{
 				// Write to I/O memory
-				if (Address >= 0xD400 && Address < 0xD8000)
+				if (Address >= 0xD400 && Address < 0xD800)
 				{
 					// SID range
 				}
@@ -140,7 +140,7 @@ unsigned char Memory::Read8(int Address)
 			if (tempPR & CHAREN)
 			{
 				// This is I/O memory
-				if (Address >= 0xD400 && Address < 0xD8000)
+				if (Address >= 0xD400 && Address < 0xD800)
 				{
 					// SID range
 				}
