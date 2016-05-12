@@ -71,8 +71,30 @@ void Memory::Write8(int Address, unsigned char Data8)
 			if (tempPR & CHAREN)
 			{
 				// Write to I/O memory
+				if (Address >= 0xD400 && Address < 0xD800)
+				{
+					// SID range
+				}
+				else if (Address >= 0xDE00)
+				{
+					// External I/O area
+				}
+				else if (Address >= 0xDD00)
+				{
+					// CIA 2
+				}
+				else if (Address >= 0xDC00)
+				{
+					// CIA 1
+				}
+				else
+				{
+					// VIC-II I/O
+					AttachedVideo->Write8(Address, Data8);
+				}
 				
-				// (Not entirely certain if this also writes to RAM. I think so.)
+				// (Not entirely certain if this also writes to RAM. I think not.)
+				return;
 			}
 		}
 	}
@@ -118,6 +140,28 @@ unsigned char Memory::Read8(int Address)
 			if (tempPR & CHAREN)
 			{
 				// This is I/O memory
+				if (Address >= 0xD400 && Address < 0xD800)
+				{
+					// SID range
+				}
+				else if (Address >= 0xDE00)
+				{
+					// External I/O area
+				}
+				else if (Address >= 0xDD00)
+				{
+					// CIA 2
+				}
+				else if (Address >= 0xDC00)
+				{
+					// CIA 1
+				}
+				else
+				{
+					// VIC-II I/O
+					return AttachedVideo->Read8(Address);
+				}
+
 				return 0xFF;
 			}
 			else
