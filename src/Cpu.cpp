@@ -2,19 +2,49 @@
 #include "Memory.h"
 #include <stdio.h>
 
-
+// Print out every CPU instruction (debug purposes)
 #define TRACE_CPU_INSTRUCTIONS 1
+
+// Combined with above, actually only print out the last instructions before an undefined instruction.
+#define TRACE_BUFFER_ON_UNDEFINED 1
 
 
 #define TRACE_INSTRUCTION_COMMON(message) printf("PC=%04X: %02X A=%02X P=%02X S=%02X X=%02X Y=%02X : %s\n", instructionPC, instruction, A, P, S, X, Y, (message))
 
-
 #if TRACE_CPU_INSTRUCTIONS
+
+#if TRACE_BUFFER_ON_UNDEFINED
+
+const int TraceBufferCount = 128;
+const int TraceBufferLineSize = 512;
+char TraceSaveBuffer[TraceBufferCount][TraceBufferLineSize] = {};
+int TraceBufferIndex = 0;
+
+#define TRACE_INSTRUCTION_SAVE(message) sprintf(TraceSaveBuffer[TraceBufferIndex], "PC=%04X: %02X A=%02X P=%02X S=%02X X=%02X Y=%02X : %s\n", instructionPC, instruction, A, P, S, X, Y, (message)); TraceBufferIndex = (TraceBufferIndex+1)%TraceBufferCount
+
+#define TRACE_INSTRUCTION(message) TRACE_INSTRUCTION_SAVE(message)
+#define TRACE_SPRINTF sprintf
+
+void DumpTraceBuffers()
+{
+	for (int i = 0; i < TraceBufferCount; i++)
+	{
+		int index = (i + TraceBufferIndex) % TraceBufferCount;
+		printf(TraceSaveBuffer[index]);
+	}
+}
+
+#define TRACE_UNDEFINED_BACKLOG DumpTraceBuffers()
+
+#else // TRACE_BUFFER_ON_UNDEFINED
+
 // Intended to be used in Cpu::Step
 #define TRACE_INSTRUCTION(message) TRACE_INSTRUCTION_COMMON(message)
 #define TRACE_SPRINTF sprintf
 
-#else
+#endif // TRACE_BUFFER_ON_UNDEFINED
+
+#else // TRACE_CPU_INSTRUCTIONS
 #define TRACE_INSTRUCTION(message)
 #define TRACE_SPRINTF ignore_args
 
@@ -23,9 +53,13 @@ static void ignore_args(...)
 
 }
 
+#endif // TRACE_CPU_INSTRUCTIONS
+
+#ifndef TRACE_UNDEFINED_BACKLOG
+#define TRACE_UNDEFINED_BACKLOG
 #endif
 
-#define TRACE_UNDEFINED(message) TRACE_INSTRUCTION_COMMON(message)
+#define TRACE_UNDEFINED(message) TRACE_UNDEFINED_BACKLOG; TRACE_INSTRUCTION_COMMON(message)
 
 Cpu::Cpu()
 {
@@ -304,8 +338,7 @@ bool Cpu::Step()
 	// 0x10 row
 
 	case 0x10: // Branch if Plus
-		stemp = PC + (char)LoadInstructionShort() + 1;
-		PC--;
+		stemp = PC + (char)LoadInstructionByte() + 1;
 		TRACE_SPRINTF(disasm, "BPL $%04X", stemp);
 		TRACE_INSTRUCTION(disasm);
 		if(!(P & NFlag))
@@ -313,8 +346,7 @@ bool Cpu::Step()
 		break;
 
 	case 0xB0: // Branch if Carry Set
-		stemp = PC + (char)LoadInstructionShort() + 1;
-		PC++;
+		stemp = PC + (char)LoadInstructionByte() + 1;
 		TRACE_SPRINTF(disasm, "BCS $%04X", stemp);
 		TRACE_INSTRUCTION(disasm);
 		if(P & CFlag)
