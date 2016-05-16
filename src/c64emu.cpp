@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
 			}
 		}
 
-		emu.RunCycles(10000);
+		emu.RunCycles(20000);
 
 		emu.UpdateVideo();
 

@@ -7,6 +7,7 @@ Emulation::Emulation() : SystemCpu(), SystemMemory(), SystemVideo()
 	SystemVideo.AttachedCpu = &SystemCpu;
 	SystemVideo.AttachedMemory = &SystemMemory;
 	SystemMemory.AttachedVideo = &SystemVideo;
+	SystemMemory.AttachedCpu = &SystemCpu;
 	SystemCpu.AttachedMemory = &SystemMemory;
 
 	Reset();

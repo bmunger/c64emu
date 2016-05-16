@@ -1,3 +1,5 @@
+
+#include "Cpu.h"
 #include "Memory.h"
 #include "Video.h"
 #include <stdio.h>
@@ -174,7 +176,7 @@ void Memory::Write8(int Address, unsigned char Data8)
 		if ((tempPR & (HIRAM | LORAM)) != 0)
 		{
 			// IO/Char memory space is not disabled
-			PRINT_IO("IO Write 0x%02X => [%04X]\n", Data8, Address);
+			PRINT_IO("IO Write 0x%02X => [%04X] (%ld)\n", Data8, Address, AttachedCpu->Cycle);
 			if (tempPR & CHAREN)
 			{
 				// Write to I/O memory
@@ -274,7 +276,7 @@ unsigned char Memory::Read8(int Address)
 					IORead = AttachedVideo->Read8(Address);
 				}
 
-				PRINT_IO("IO Read [%04X] => 0x%02X\n", Address, IORead);
+				PRINT_IO("IO Read [%04X] => 0x%02X (%ld)\n", Address, IORead, AttachedCpu->Cycle);
 
 				return IORead;
 			}

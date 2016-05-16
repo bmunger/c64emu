@@ -47,7 +47,7 @@ public:
 	unsigned char Read8(int Address);
 
 	Video * AttachedVideo;
-
+	Cpu * AttachedCpu;
 
 	unsigned char * RAM;
 	unsigned char * Kernal;

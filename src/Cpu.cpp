@@ -9,7 +9,7 @@
 #define TRACE_BUFFER_ON_UNDEFINED 1
 
 
-#define TRACE_INSTRUCTION_COMMON(message) printf("PC=%04X: %02X A=%02X P=%02X S=%02X X=%02X Y=%02X : %s\n", instructionPC, instruction, A, P, S, X, Y, (message))
+#define TRACE_INSTRUCTION_COMMON(message) printf("PC=%04X: %02X A=%02X P=%02X S=%02X X=%02X Y=%02X : %s (%ld)\n", instructionPC, instruction, A, P, S, X, Y, (message), Cycle)
 
 #if TRACE_CPU_INSTRUCTIONS
 
@@ -338,7 +338,8 @@ bool Cpu::Step()
 	// 0x10 row
 
 	case 0x10: // Branch if Plus
-		stemp = PC + (char)LoadInstructionByte() + 1;
+		stemp = (char)LoadInstructionByte();
+		stemp += PC;
 		TRACE_SPRINTF(disasm, "BPL $%04X", stemp);
 		TRACE_INSTRUCTION(disasm);
 		if(!(P & NFlag))
@@ -346,7 +347,8 @@ bool Cpu::Step()
 		break;
 
 	case 0xB0: // Branch if Carry Set
-		stemp = PC + (char)LoadInstructionByte() + 1;
+		stemp = (char)LoadInstructionByte();
+		stemp += PC;
 		TRACE_SPRINTF(disasm, "BCS $%04X", stemp);
 		TRACE_INSTRUCTION(disasm);
 		if(P & CFlag)
@@ -354,7 +356,8 @@ bool Cpu::Step()
 		break;
 
 	case 0xF0: // Branch if Equal
-		stemp = PC + (char)LoadInstructionByte() + 1;
+		stemp = (char)LoadInstructionByte();
+		stemp += PC;
 		TRACE_SPRINTF(disasm, "BEQ $%04X", stemp);
 		TRACE_INSTRUCTION(disasm);
 		if ( (P&ZFlag) == ZFlag)
