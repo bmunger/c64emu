@@ -2,6 +2,107 @@
 #include "Video.h"
 #include <stdio.h>
 
+#define TRACE_IO_ACCESS 1
+
+static void ignore_args(...)
+{
+
+}
+
+#if TRACE_IO_ACCESS
+#define PRINT_IO printf
+#else
+#define PRINT_IO ignore_args
+#endif
+
+
+void CIAChip::Setup(Memory* useMemory, FnPtrCiaCallback readFn, FnPtrCiaCallback writeFn)
+{
+	AttachedMemory = useMemory;
+	CbRead = readFn;
+	CbWrite = writeFn;
+}
+
+void CIAChip::Reset()
+{
+	PRA = PRB = 0;
+	DDRA = DDRB = 0;
+}
+
+void CIAChip::Write8(int Address, unsigned char Data8)
+{
+	switch (Address & 15)
+	{
+	case 0: // PRA
+		PrevPRA = PRA; PrevPRB = PRB;
+		PRA = Data8;
+		if (CbWrite) CbWrite(this);
+		break;
+	case 1: // PRB
+		PrevPRA = PRA; PrevPRB = PRB;
+		PRB = Data8;
+		if (CbWrite) CbWrite(this);
+		break;
+	case 2: // DDRA
+		DDRA = Data8;
+		break;
+	case 3: // DDRB
+		DDRB = Data8;
+		break;
+	case 4: // TA Lo
+	case 5: // TA Hi
+	case 6: // TB Lo
+	case 7: // TB Hi
+	case 8: // TOD 10ths
+	case 9: // TOD Sec
+	case 10: // TOD Min
+	case 11: // TOD Hr
+	case 12: // SDR
+	case 13: // ICR
+	case 14: // CRA
+	case 15: // CRB
+		break;
+	}
+}
+unsigned char CIAChip::Read8(int Address)
+{
+	switch (Address & 15)
+	{
+	case 0: // PRA
+		PrevPRA = PRA; PrevPRB = PRB;
+		if (CbRead) CbRead(this);
+		return PRA;
+	case 1: // PRB
+		PrevPRA = PRA; PrevPRB = PRB;
+		if (CbRead) CbRead(this);
+		return PRB;
+	case 2: // DDRA
+		return DDRA;
+	case 3: // DDRB
+		return DDRB;
+	case 4: // TA Lo
+	case 5: // TA Hi
+	case 6: // TB Lo
+	case 7: // TB Hi
+	case 8: // TOD 10ths
+	case 9: // TOD Sec
+	case 10: // TOD Min
+	case 11: // TOD Hr
+	case 12: // SDR
+	case 13: // ICR
+	case 14: // CRA
+	case 15: // CRB
+		break;
+	}
+	return 0xFF; // unimplemented.
+}
+
+
+
+
+
+
+
 Memory::Memory() : RAM(nullptr), Kernal(nullptr), Basic(nullptr), Char(nullptr)
 {
 	RAM = new unsigned char[65536];
@@ -9,6 +110,9 @@ Memory::Memory() : RAM(nullptr), Kernal(nullptr), Basic(nullptr), Char(nullptr)
 	Kernal = LoadRom("roms/901227-03.u4", 8192);
 	Basic = LoadRom("roms/901226-01.u3", 8192);
 	Char = LoadRom("roms/901225-01.u5", 4096);
+
+	CIA1.Setup(this, Cia1Read, Cia1Write);
+	CIA2.Setup(this, Cia2Read, Cia2Write);
 
 	// Todo: Load rom images from file.
 	Reset();
@@ -33,6 +137,9 @@ void Memory::Reset()
 	// CHAREN: 1 = IO space is visible, 0 = Char space is visible.
 	DDR = 0x2F;
 	PR = 0x37;
+
+	CIA1.Reset();
+	CIA2.Reset();
 }
 
 unsigned char Memory::EffectivePR()
@@ -67,7 +174,7 @@ void Memory::Write8(int Address, unsigned char Data8)
 		if ((tempPR & (HIRAM | LORAM)) != 0)
 		{
 			// IO/Char memory space is not disabled
-
+			PRINT_IO("IO Write 0x%02X => [%04X]\n", Data8, Address);
 			if (tempPR & CHAREN)
 			{
 				// Write to I/O memory
@@ -82,10 +189,12 @@ void Memory::Write8(int Address, unsigned char Data8)
 				else if (Address >= 0xDD00)
 				{
 					// CIA 2
+					CIA2.Write8(Address, Data8);
 				}
 				else if (Address >= 0xDC00)
 				{
 					// CIA 1
+					CIA1.Write8(Address, Data8);
 				}
 				else
 				{
@@ -139,6 +248,7 @@ unsigned char Memory::Read8(int Address)
 
 			if (tempPR & CHAREN)
 			{
+				unsigned char IORead = 0xFF;
 				// This is I/O memory
 				if (Address >= 0xD400 && Address < 0xD800)
 				{
@@ -151,18 +261,22 @@ unsigned char Memory::Read8(int Address)
 				else if (Address >= 0xDD00)
 				{
 					// CIA 2
+					IORead = CIA2.Read8(Address);
 				}
 				else if (Address >= 0xDC00)
 				{
 					// CIA 1
+					IORead = CIA1.Read8(Address);
 				}
 				else
 				{
 					// VIC-II I/O
-					return AttachedVideo->Read8(Address);
+					IORead = AttachedVideo->Read8(Address);
 				}
 
-				return 0xFF;
+				PRINT_IO("IO Read [%04X] => 0x%02X\n", Address, IORead);
+
+				return IORead;
 			}
 			else
 			{
@@ -199,4 +313,21 @@ unsigned char * Memory::LoadRom(const char * Filename, int Size)
 	fclose(f);
 
 	return data;
+}
+
+void Memory::Cia1Read(CIAChip* chip)
+{
+
+}
+void Memory::Cia1Write(CIAChip* chip)
+{
+
+}
+void Memory::Cia2Read(CIAChip* chip)
+{
+
+}
+void Memory::Cia2Write(CIAChip* chip)
+{
+
 }
