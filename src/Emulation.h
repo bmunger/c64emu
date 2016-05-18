@@ -5,6 +5,7 @@
 #include "Video.h"
 #include "Memory.h"
 #include "Cpu.h"
+#include "Keyboard.h"
 
 class Emulation
 {
@@ -22,6 +23,7 @@ public:
 	Video SystemVideo;
 	Memory SystemMemory;
 	Cpu SystemCpu;
+	Keyboard SystemKeyboard;
 };
 
 #endif

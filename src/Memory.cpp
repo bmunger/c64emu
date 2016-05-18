@@ -2,6 +2,7 @@
 #include "Cpu.h"
 #include "Memory.h"
 #include "Video.h"
+#include "Keyboard.h"
 #include <stdio.h>
 
 #define TRACE_IO_ACCESS 1
@@ -319,7 +320,7 @@ unsigned char * Memory::LoadRom(const char * Filename, int Size)
 
 void Memory::Cia1Read(CIAChip* chip)
 {
-
+	chip->AttachedMemory->AttachedKeyboard->UpdateKeyboardMatrix(chip->PRA, chip->PRB, chip->DDRA, chip->DDRB);
 }
 void Memory::Cia1Write(CIAChip* chip)
 {

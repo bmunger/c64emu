@@ -86,6 +86,7 @@
     <ClCompile Include="src\c64emu.cpp" />
     <ClCompile Include="src\Cpu.cpp" />
     <ClCompile Include="src\Emulation.cpp" />
+    <ClCompile Include="src\Keyboard.cpp" />
     <ClCompile Include="src\Memory.cpp" />
     <ClCompile Include="src\Video.cpp" />
   </ItemGroup>
@@ -93,6 +94,7 @@
     <ClInclude Include="src\c64emu.h" />
     <ClInclude Include="src\Cpu.h" />
     <ClInclude Include="src\Emulation.h" />
+    <ClInclude Include="src\Keyboard.h" />
     <ClInclude Include="src\Memory.h" />
     <ClInclude Include="src\Video.h" />
   </ItemGroup>

@@ -3,6 +3,7 @@
 
 class Video;
 class Memory;
+class Keyboard;
 class CIAChip;
 
 // Function pointer type for CIA Chip callbacks.
@@ -48,6 +49,7 @@ public:
 
 	Video * AttachedVideo;
 	Cpu * AttachedCpu;
+	Keyboard* AttachedKeyboard;
 
 	unsigned char * RAM;
 	unsigned char * Kernal;

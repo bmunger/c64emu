@@ -31,6 +31,14 @@ int main(int argc, char* argv[])
 	while (1) {
 		SDL_Event e;
 		if (SDL_PollEvent(&e)) {
+
+			// Handle keyboard events
+			if (e.type == SDL_KEYDOWN || e.type == SDL_KEYUP)
+			{
+				emu.SystemKeyboard.KeyEvent(e.key);
+			}
+
+
 			if (e.type == SDL_QUIT) {
 				break;
 			}

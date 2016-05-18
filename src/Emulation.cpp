@@ -1,13 +1,14 @@
 #include "Emulation.h"
 
 
-Emulation::Emulation() : SystemCpu(), SystemMemory(), SystemVideo()
+Emulation::Emulation() : SystemCpu(), SystemMemory(), SystemVideo(), SystemKeyboard()
 {
 	// connect
 	SystemVideo.AttachedCpu = &SystemCpu;
 	SystemVideo.AttachedMemory = &SystemMemory;
 	SystemMemory.AttachedVideo = &SystemVideo;
 	SystemMemory.AttachedCpu = &SystemCpu;
+	SystemMemory.AttachedKeyboard = &SystemKeyboard;
 	SystemCpu.AttachedMemory = &SystemMemory;
 
 	Reset();
