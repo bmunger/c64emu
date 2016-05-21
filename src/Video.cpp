@@ -231,9 +231,22 @@ void Video::SetupRendering(SDL_Window* EmuWindow)
 	AttachedWindow = EmuWindow;
 	Renderer = SDL_CreateRenderer(EmuWindow, -1, SDL_RENDERER_ACCELERATED);
 	Screen = SDL_CreateTexture(Renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, ScreenWidth, ScreenHeight);
-	
+}
+
+void Video::DumpRendererInfo()
+{
+	// For diagnostic purposes. Not currently active.
+
+	SDL_RendererInfo info;
+	SDL_GetRendererInfo(Renderer, &info);
+	printf("Renderer name: %s\n", info.name);
+	for (int i = 0; i < info.num_texture_formats; i++)
+	{
+		printf("  %s\n", SDL_GetPixelFormatName(info.texture_formats[i]));
+	}
 
 }
+
 void Video::TeardownRendering()
 {
 	SDL_DestroyTexture(Screen);
@@ -242,36 +255,25 @@ void Video::TeardownRendering()
 void Video::UpdateVideo()
 {
 	// copy shadow pixel data into the texture
-	unsigned long * target = NULL;
-	int pitch = 0;
-	if (0 == SDL_LockTexture(Screen, NULL, (void**)&target, &pitch))
+	if (0 != SDL_UpdateTexture(Screen, NULL, ScreenData, ScreenWidth * 4))
 	{
-		int copyWords = pitch/4;
-		if (copyWords > ScreenWidth)
-		{
-			copyWords = ScreenWidth;
-		}
-
-		for (int y = 0; y < ScreenHeight; y++)
-		{
-			int src = y*ScreenWidth;
-			for (int x = 0; x < copyWords; x++)
-			{
-				target[x] = ScreenData[src+x];
-			}
-			target += (pitch / 4);
-		}
-
-		SDL_UnlockTexture(Screen);
-	}
-	else
-	{
-		printf("SDL_LockTexture Error. %s\n", SDL_GetError());
+		printf("SDL_UpdateTexture Error. %s\n", SDL_GetError());
 	}
 
 	// Draw texture to screen
 	SDL_RenderClear(Renderer);
-	if (0 != SDL_RenderCopy(Renderer, Screen, NULL, NULL))
+
+	SDL_Rect srcRect, screenRect;
+	srcRect.x = srcRect.y = 0;
+	srcRect.w = ScreenWidth;
+	srcRect.h = ScreenHeight;
+
+	screenRect.x = 0;
+	screenRect.y = 0;
+	screenRect.w = 800;
+	screenRect.h = 600;
+
+	if (0 != SDL_RenderCopy(Renderer, Screen, &srcRect, &screenRect))
 	{
 		printf("SDL_RenderCopy Error. %s\n", SDL_GetError());
 	}

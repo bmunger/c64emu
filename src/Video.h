@@ -24,6 +24,8 @@ public:
 	void Write8(int Address, unsigned char Data8);
 	unsigned char Read8(int Address);
 
+	void DumpRendererInfo();
+
 protected:
 	SDL_Window* AttachedWindow;
 	SDL_Texture* Screen;
