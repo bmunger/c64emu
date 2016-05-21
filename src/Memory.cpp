@@ -177,7 +177,7 @@ void Memory::Write8(int Address, unsigned char Data8)
 		if ((tempPR & (HIRAM | LORAM)) != 0)
 		{
 			// IO/Char memory space is not disabled
-			PRINT_IO("IO Write 0x%02X => [%04X] (%ld)\n", Data8, Address, AttachedCpu->Cycle);
+			PRINT_IO("IO Write 0x%02X => [%04X] (%lld)\n", Data8, Address, AttachedCpu->Cycle);
 			if (tempPR & CHAREN)
 			{
 				// Write to I/O memory
@@ -277,7 +277,7 @@ unsigned char Memory::Read8(int Address)
 					IORead = AttachedVideo->Read8(Address);
 				}
 
-				PRINT_IO("IO Read [%04X] => 0x%02X (%ld)\n", Address, IORead, AttachedCpu->Cycle);
+				PRINT_IO("IO Read [%04X] => 0x%02X (%lld)\n", Address, IORead, AttachedCpu->Cycle);
 
 				return IORead;
 			}

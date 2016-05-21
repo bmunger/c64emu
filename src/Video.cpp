@@ -97,7 +97,7 @@ unsigned char Video::ReadVicMemory(int Address)
 
 void Video::VideoStep()
 {
-	int cycles = AttachedCpu->Cycle - PrevCycle;
+	int cycles = (int)(AttachedCpu->Cycle - PrevCycle);
 	PrevCycle += cycles;
 
 	int pixels = cycles * 8;
@@ -197,7 +197,10 @@ unsigned char Video::Read8(int Address)
 		{
 			switch (Address)
 			{
-
+			case 0x11: // CR1
+				return ((CursorY >> 1) & 0x80) | (Registers[Address] & 0x7F);
+			case 0x12: // RASTER
+				return CursorY & 0xFF;
 
 			default:
 				return Registers[Address];

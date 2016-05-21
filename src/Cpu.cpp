@@ -9,7 +9,7 @@
 #define TRACE_BUFFER_ON_UNDEFINED 1
 
 
-#define TRACE_INSTRUCTION_COMMON(message) printf("PC=%04X: %02X A=%02X P=%02X S=%02X X=%02X Y=%02X : %s (%ld)\n", instructionPC, instruction, A, P, S, X, Y, (message), Cycle)
+#define TRACE_INSTRUCTION_COMMON(message) printf("PC=%04X: %02X A=%02X P=%02X S=%02X X=%02X Y=%02X : %s (%lld)\n", instructionPC, instruction, A, P, S, X, Y, (message), Cycle)
 
 #if TRACE_CPU_INSTRUCTIONS
 
