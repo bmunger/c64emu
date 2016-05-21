@@ -1,6 +1,7 @@
 #include "Video.h"
 #include "Memory.h"
 #include "Cpu.h"
+#include <cstdio>
 
 #define GENERATE_COLOR(r,g,b) (((r)<<16) | ((g)<<8) | (b) | 0xFF000000)
 
@@ -241,10 +242,38 @@ void Video::TeardownRendering()
 void Video::UpdateVideo()
 {
 	// copy shadow pixel data into the texture
-	SDL_UpdateTexture(Screen, NULL, ScreenData, ScreenWidth*sizeof(unsigned long));
+	unsigned long * target = NULL;
+	int pitch = 0;
+	if (0 == SDL_LockTexture(Screen, NULL, (void**)&target, &pitch))
+	{
+		int copyWords = pitch/4;
+		if (copyWords > ScreenWidth)
+		{
+			copyWords = ScreenWidth;
+		}
+
+		for (int y = 0; y < ScreenHeight; y++)
+		{
+			int src = y*ScreenWidth;
+			for (int x = 0; x < copyWords; x++)
+			{
+				target[x] = ScreenData[src+x];
+			}
+			target += (pitch / 4);
+		}
+
+		SDL_UnlockTexture(Screen);
+	}
+	else
+	{
+		printf("SDL_LockTexture Error. %s\n", SDL_GetError());
+	}
 
 	// Draw texture to screen
 	SDL_RenderClear(Renderer);
-	SDL_RenderCopy(Renderer, Screen, NULL, NULL);
+	if (0 != SDL_RenderCopy(Renderer, Screen, NULL, NULL))
+	{
+		printf("SDL_RenderCopy Error. %s\n", SDL_GetError());
+	}
 	SDL_RenderPresent(Renderer);
 }
