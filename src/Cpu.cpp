@@ -175,6 +175,13 @@ bool Cpu::Step()
 		SetResultFlags(Y);
 		break;
 
+	case 0xC4: // Compare Y (zeropage)
+		temp = LoadInstructionByte();
+		TRACE_SPRINTF(disasm, "CPY $%02X", temp);
+		TRACE_INSTRUCTION(disasm);
+		SetResultFlags(Sub(Y, AttachedMemory->Read8(temp), 0));
+		break;
+
 	// 0x05 row
 	case 0x85: // Store A
 		temp = LoadInstructionByte();
@@ -189,6 +196,13 @@ bool Cpu::Step()
 		TRACE_INSTRUCTION(disasm);
 		A = Load(temp);
 		SetResultFlags(A);
+		break;
+
+	case 0xC5: // Compare A
+		temp = LoadInstructionByte();
+		TRACE_SPRINTF(disasm, "CMP $%02X", temp);
+		TRACE_INSTRUCTION(disasm);
+		SetResultFlags(Sub(A, AttachedMemory->Read8(temp), 0));
 		break;
 
 	// 0x06 row
@@ -309,9 +323,9 @@ bool Cpu::Step()
 		temp = A & 0x80;
 		A = (A << 1) & 0xFF;
 		if((P & CFlag) != 0)
-			A = A | 0x1;
+			A |= 0x1;
 		if(temp != 0)
-			P &= CFlag;
+			P |= CFlag;
 		SetResultFlags(A);
 		break;
 
@@ -341,11 +355,26 @@ bool Cpu::Step()
 		PC = stemp;
 		break;
 
+	case 0x6C: // Jump (indirect)
+		stemp = LoadInstructionShort();
+		TRACE_SPRINTF(disasm, "JMP ($%04X)", stemp);
+		TRACE_INSTRUCTION(disasm);
+		PC = Load16(stemp);
+		break;
+
 	case 0x8C: // Store Y
 		stemp = LoadInstructionShort();
 		TRACE_SPRINTF(disasm, "STY $%04X", stemp);
 		TRACE_INSTRUCTION(disasm);
 		AttachedMemory->Write8(stemp, Y);
+		break;
+
+	case 0xAC: // Load Y
+		stemp = LoadInstructionShort();
+		TRACE_SPRINTF(disasm, "LDY $%04X", stemp);
+		TRACE_INSTRUCTION(disasm);
+		Y = Load16(stemp);
+		SetResultFlags(Y);
 		break;
 
 	// 0x0D row
@@ -381,6 +410,14 @@ bool Cpu::Step()
 		TRACE_INSTRUCTION(disasm);
 		break;
 
+	case 0xAE: // Load X
+		stemp = LoadInstructionShort();
+		TRACE_SPRINTF(disasm, "LDX $%04X", stemp);
+		TRACE_INSTRUCTION(disasm);
+		X = Load16(stemp);
+		SetResultFlags(X);
+		break;
+
 	// 0x10 row
 
 	case 0x10: // Branch if Plus
@@ -406,7 +443,7 @@ bool Cpu::Step()
 		stemp = PC + temp;
 		TRACE_SPRINTF(disasm, "BCC $%04X", stemp);
 		TRACE_INSTRUCTION(disasm);
-		if(P & CFlag)
+		if(!(P & CFlag))
 			PC = stemp;
 		break;
 
