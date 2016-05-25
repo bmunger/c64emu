@@ -183,6 +183,15 @@ bool Cpu::Step()
 		break;
 
 	// 0x05 row
+
+	case 0x65: // ADC
+		temp = LoadInstructionByte();
+		TRACE_SPRINTF(disasm, "ADC $%02X", temp);
+		TRACE_INSTRUCTION(disasm);
+		A = Add(A, Load(temp), P & CFlag);
+		SetResultFlags(A);
+		break;
+
 	case 0x85: // Store A
 		temp = LoadInstructionByte();
 		AttachedMemory->Write8(temp, A);
@@ -314,6 +323,21 @@ bool Cpu::Step()
 		A = LoadInstructionByte();
 		TRACE_SPRINTF(disasm, "LDA #$%02X", A);
 		TRACE_INSTRUCTION(disasm);
+		break;
+
+	case 0xC9: // Compare A
+		temp = LoadInstructionByte();
+		TRACE_SPRINTF(disasm, "CMP #$%02X", temp);
+		TRACE_INSTRUCTION(disasm);
+		SetResultFlags(Sub(A, temp, 0));
+		break;
+
+	case 0xE9: // Subtract With Carry
+		temp = LoadInstructionByte();
+		TRACE_SPRINTF(disasm, "SBC #$%02X", temp);
+		TRACE_INSTRUCTION(disasm);
+		A = Sub(A, temp, P & CFlag);
+		SetResultFlags(A);
 		break;
 
 	// 0x0A row
