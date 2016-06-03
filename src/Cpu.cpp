@@ -182,7 +182,22 @@ bool Cpu::Step()
 		SetResultFlags(Sub(Y, AttachedMemory->Read8(temp), 0));
 		break;
 
+	case 0xE4: // Compare X (zeropage)
+		temp = LoadInstructionByte();
+		TRACE_SPRINTF(disasm, "CPX $%02X", temp);
+		TRACE_INSTRUCTION(disasm);
+		SetResultFlags(Sub(X, AttachedMemory->Read8(temp), 0));
+		break;
+
 	// 0x05 row
+
+	case 0x05: // ORA (zeropage)
+		temp = LoadInstructionByte();
+		TRACE_SPRINTF(disasm, "ORA $%02X", temp);
+		TRACE_INSTRUCTION(disasm);
+		A |= AttachedMemory->Read8(temp);
+		SetResultFlags(A);
+		break;
 
 	case 0x65: // ADC
 		temp = LoadInstructionByte();
@@ -342,6 +357,15 @@ bool Cpu::Step()
 
 	// 0x0A row
 
+	case 0x0A: // Arithmetic Shift Left
+		if(A & 0x80)
+			P |= CFlag;
+		else
+			P &= ~CFlag;
+		A = A << 1;
+		SetResultFlags(A);
+		break;
+
 	case 0x2A: // Rotate Left
 		TRACE_INSTRUCTION("ROL");
 		temp = A & 0x80;
@@ -350,6 +374,8 @@ bool Cpu::Step()
 			A |= 0x1;
 		if(temp != 0)
 			P |= CFlag;
+		else
+			P &= ~CFlag;
 		SetResultFlags(A);
 		break;
 
@@ -496,7 +522,7 @@ bool Cpu::Step()
 		TRACE_SPRINTF(disasm, "STA ($%02X),Y", temp);
 		TRACE_INSTRUCTION(disasm);
 		//AttachedMemory->Write8(Load16(temp) + Y, A);
-		AttachedMemory->Write8(Load16((temp + Y) & 0xFF), A);
+		AttachedMemory->Write8(Load16(temp) + Y, A);
 		break;
 
 	case 0xB1: // Load A (Indirect-indexed)
