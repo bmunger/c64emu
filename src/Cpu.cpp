@@ -530,7 +530,7 @@ bool Cpu::Step()
 		TRACE_SPRINTF(disasm, "LDA ($%02X),Y", temp);
 		TRACE_INSTRUCTION(disasm);
 		//A = Load(Load16(temp) + Y);
-		A = Load(Load16((temp + Y) & 0xFF));
+		A = Load(Load16(temp) + Y & 0xFF);
 		SetResultFlags(A);
 		break;
 
@@ -538,7 +538,7 @@ bool Cpu::Step()
 		temp = LoadInstructionByte();
 		TRACE_SPRINTF(disasm, "CMP ($%02X),Y", temp);
 		TRACE_INSTRUCTION(disasm);
-		Sub(A, Load(Load16((temp + Y) & 0xFF)), 0);
+		Sub(A, Load(Load16(temp) + Y & 0xFF), 0);
 		break;
 
 	// 0x14 row
