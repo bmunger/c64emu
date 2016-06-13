@@ -229,7 +229,28 @@ bool Cpu::Step()
 		SetResultFlags(Sub(A, AttachedMemory->Read8(temp), 0));
 		break;
 
+	case 0xE5: // Subtract with Carry (Zeropage)
+		temp = LoadInstructionByte();
+		TRACE_SPRINTF(disasm, "SBC $%02X", temp);
+		TRACE_INSTRUCTION(disasm);
+		A = Sub(A, Load(temp), P & CFlag);
+		SetResultFlags(A);
+		break;
+
 	// 0x06 row
+
+	case 0x46: // Logic Shift Right (Zeropage)
+		temp = LoadInstructionByte();
+		TRACE_SPRINTF(disasm, "LSR $%02X", temp);
+		TRACE_INSTRUCTION(disasm);
+		temp2 = Load(temp);
+		if(temp2 & 0x1)
+			P |= CFlag;
+		else
+			P &= ~CFlag;
+		AttachedMemory->Write8(temp, temp2 >> 1);
+		SetResultFlags(temp2);
+		break;
 
 	case 0x84: // Store Y (Zeropage)
 		temp = LoadInstructionByte();
@@ -323,6 +344,14 @@ bool Cpu::Step()
 		SetResultFlags(A);
 		break;
 
+	case 0x49: // Exclusive OR
+		temp = LoadInstructionByte();
+		TRACE_SPRINTF(disasm, "EOR #$%02X", temp);
+		TRACE_INSTRUCTION(disasm);
+		A ^= temp;
+		SetResultFlags(A);
+		break;
+
 	case 0x69: // ADC
 		temp = LoadInstructionByte();
 		TRACE_SPRINTF(disasm, "ADC #$%02X", temp);
@@ -358,6 +387,7 @@ bool Cpu::Step()
 	// 0x0A row
 
 	case 0x0A: // Arithmetic Shift Left
+		TRACE_INSTRUCTION("ASL");
 		if(A & 0x80)
 			P |= CFlag;
 		else
