@@ -167,6 +167,13 @@ bool Cpu::Step()
 
 	// 0x04 row
 
+	case 0x24: // BIT (zeropage)
+		temp = LoadInstructionByte();
+		TRACE_SPRINTF(disasm, "BIT $%02X", temp);
+		TRACE_INSTRUCTION(disasm);
+		SetResultFlags(A & temp);
+		break;
+
 	case 0xA4: // Load Y
 		temp = LoadInstructionByte();
 		TRACE_SPRINTF(disasm, "LDY $%02X", temp);
@@ -196,6 +203,14 @@ bool Cpu::Step()
 		TRACE_SPRINTF(disasm, "ORA $%02X", temp);
 		TRACE_INSTRUCTION(disasm);
 		A |= AttachedMemory->Read8(temp);
+		SetResultFlags(A);
+		break;
+
+	case 0x45: // Exclusive OR (zeropage)
+		temp = LoadInstructionByte();
+		TRACE_SPRINTF(disasm, "EOR $%02X", temp);
+		TRACE_INSTRUCTION(disasm);
+		A ^= Load(temp);
 		SetResultFlags(A);
 		break;
 
@@ -238,6 +253,18 @@ bool Cpu::Step()
 		break;
 
 	// 0x06 row
+
+	case 0x06: // Exclusive OR (zeropage)
+		temp = LoadInstructionByte();
+		TRACE_SPRINTF(disasm, "EOR $%02X", temp);
+		TRACE_INSTRUCTION(disasm);
+		if(temp & 0x80)
+			P |= CFlag;
+		else
+			P &= ~CFlag;
+		temp = temp << 1;
+		SetResultFlags(temp);
+		break;
 
 	case 0x46: // Logic Shift Right (Zeropage)
 		temp = LoadInstructionByte();
@@ -546,6 +573,14 @@ bool Cpu::Step()
 		break;
 
 	// 0x11 row
+
+	case 0x71: // Add with Carry (Indirect-indexed)
+		temp = LoadInstructionByte();
+		TRACE_SPRINTF(disasm, "ADC ($%02X),Y", temp);
+		TRACE_INSTRUCTION(disasm);
+		A = Add(A, Load(temp) + Y, P & CFlag);
+		SetResultFlags(A);
+		break;
 
 	case 0x91: // Store A (Indirect-indexed)
 		temp = LoadInstructionByte();
