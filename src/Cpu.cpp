@@ -171,7 +171,7 @@ bool Cpu::Step()
 		temp = LoadInstructionByte();
 		TRACE_SPRINTF(disasm, "BIT $%02X", temp);
 		TRACE_INSTRUCTION(disasm);
-		SetResultFlags(A & temp);
+		SetResultFlags(A & Load(temp));
 		break;
 
 	case 0xA4: // Load Y
@@ -254,16 +254,16 @@ bool Cpu::Step()
 
 	// 0x06 row
 
-	case 0x06: // Exclusive OR (zeropage)
+	case 0x06: // Arithmetic Shift Left (zeropage)
 		temp = LoadInstructionByte();
-		TRACE_SPRINTF(disasm, "EOR $%02X", temp);
+		TRACE_SPRINTF(disasm, "ASL $%02X", temp);
 		TRACE_INSTRUCTION(disasm);
-		if(temp & 0x80)
+		if(Load(temp) & 0x80)
 			P |= CFlag;
 		else
 			P &= ~CFlag;
-		temp = temp << 1;
-		SetResultFlags(temp);
+		AttachedMemory->Write8(Load(temp), Load(temp) << 1);
+		SetResultFlags(Load(temp));
 		break;
 
 	case 0x46: // Logic Shift Right (Zeropage)
@@ -276,7 +276,7 @@ bool Cpu::Step()
 		else
 			P &= ~CFlag;
 		AttachedMemory->Write8(temp, temp2 >> 1);
-		SetResultFlags(temp2);
+		SetResultFlags(temp2 >> 1);
 		break;
 
 	case 0x84: // Store Y (Zeropage)
@@ -396,7 +396,7 @@ bool Cpu::Step()
 		TRACE_INSTRUCTION(disasm);
 		break;
 
-	case 0xC9: // Compare A
+	case 0xC9: // Compare A (Immediate)
 		temp = LoadInstructionByte();
 		TRACE_SPRINTF(disasm, "CMP #$%02X", temp);
 		TRACE_INSTRUCTION(disasm);
@@ -509,6 +509,13 @@ bool Cpu::Step()
 		SetResultFlags(A);
 		break;
 
+	case 0xCD: // Compare A (Absolute)
+		stemp = LoadInstructionShort();
+		TRACE_SPRINTF(disasm, "CMP $%04X", stemp);
+		TRACE_INSTRUCTION(disasm);
+		SetResultFlags(Sub(A, stemp, 0));
+		break;
+
 	// 0x0E row
 	case 0x8E: // Store X
 		stemp = LoadInstructionShort();
@@ -578,7 +585,7 @@ bool Cpu::Step()
 		temp = LoadInstructionByte();
 		TRACE_SPRINTF(disasm, "ADC ($%02X),Y", temp);
 		TRACE_INSTRUCTION(disasm);
-		A = Add(A, Load(temp) + Y, P & CFlag);
+		A = Add(A, Load(Load16(temp) + Y), P & CFlag);
 		SetResultFlags(A);
 		break;
 
@@ -587,7 +594,7 @@ bool Cpu::Step()
 		TRACE_SPRINTF(disasm, "STA ($%02X),Y", temp);
 		TRACE_INSTRUCTION(disasm);
 		//AttachedMemory->Write8(Load16(temp) + Y, A);
-		AttachedMemory->Write8(Load16(temp) + Y, A);
+		AttachedMemory->Write8(Load(Load16(temp) + Y), A);
 		break;
 
 	case 0xB1: // Load A (Indirect-indexed)
