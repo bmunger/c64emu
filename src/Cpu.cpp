@@ -258,12 +258,13 @@ bool Cpu::Step()
 		temp = LoadInstructionByte();
 		TRACE_SPRINTF(disasm, "ASL $%02X", temp);
 		TRACE_INSTRUCTION(disasm);
-		if(Load(temp) & 0x80)
+		temp2 = Load(temp);
+		if(temp2 & 0x80)
 			P |= CFlag;
 		else
 			P &= ~CFlag;
-		AttachedMemory->Write8(Load(temp), Load(temp) << 1);
-		SetResultFlags(Load(temp));
+		AttachedMemory->Write8(temp, temp2 << 1);
+		SetResultFlags(temp2);
 		break;
 
 	case 0x46: // Logic Shift Right (Zeropage)
@@ -594,7 +595,7 @@ bool Cpu::Step()
 		TRACE_SPRINTF(disasm, "STA ($%02X),Y", temp);
 		TRACE_INSTRUCTION(disasm);
 		//AttachedMemory->Write8(Load16(temp) + Y, A);
-		AttachedMemory->Write8(Load(Load16(temp) + Y), A);
+		AttachedMemory->Write8(Load16(temp) + Y, A);
 		break;
 
 	case 0xB1: // Load A (Indirect-indexed)
