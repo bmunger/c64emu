@@ -456,6 +456,13 @@ bool Cpu::Step()
 
 	// 0x0C row
 
+	case 0x2C: // Bit test (absolute)
+		stemp = LoadInstructionShort();
+		TRACE_SPRINTF(disasm, "BIT $%04X", stemp);
+		TRACE_INSTRUCTION(disasm);
+		SetResultFlags(A & stemp);
+		break;
+
 	case 0x4C: // Jump (direct)
 		stemp = LoadInstructionShort();
 		TRACE_SPRINTF(disasm, "JMP $%04X", stemp);
