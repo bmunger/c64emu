@@ -17,7 +17,11 @@ public:
 	bool Running;
 	long long Cycle;
 
+	unsigned short InstructionPC();
+
 protected:
+
+	unsigned short SavedPC; // Save the PC for the instruction currently being executed.
 
 	unsigned short PC; // Program counter
 	unsigned char S; // Stack pointer

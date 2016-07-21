@@ -82,10 +82,17 @@ void Cpu::Reset()
 	Running = true;
 }
 
+unsigned short Cpu::InstructionPC()
+{
+	return SavedPC;
+}
+
+
 bool Cpu::Step()
 {
 	unsigned short instructionPC;
 	instructionPC = PC;
+	SavedPC = PC;
 	unsigned char instruction;
 	unsigned char temp, temp2;
 	unsigned short stemp;
@@ -521,7 +528,7 @@ bool Cpu::Step()
 		stemp = LoadInstructionShort();
 		TRACE_SPRINTF(disasm, "CMP $%04X", stemp);
 		TRACE_INSTRUCTION(disasm);
-		SetResultFlags(Sub(A, stemp, 0));
+		SetResultFlags(Sub(A, Load(stemp), 0));
 		break;
 
 	// 0x0E row
