@@ -80,6 +80,8 @@ void Cpu::Reset()
 	PC = Load16(0xFFFC);
 	Cycle = 0;
 	Running = true;
+	HandleInterrupt = false;
+	RequestedInterrupts = 0;
 }
 
 unsigned short Cpu::InstructionPC()
@@ -87,12 +89,22 @@ unsigned short Cpu::InstructionPC()
 	return SavedPC;
 }
 
+void Cpu::RequestIrq(int sourceFlag)
+{
+	RequestedInterrupts |= sourceFlag;
+	CheckHandleInterrupt();
+}
+void Cpu::UnrequestIrq(int sourceFlag)
+{
+	RequestedInterrupts &= ~sourceFlag;
+	CheckHandleInterrupt();
+}
+
+
 
 bool Cpu::Step()
 {
 	unsigned short instructionPC;
-	instructionPC = PC;
-	SavedPC = PC;
 	unsigned char instruction;
 	unsigned char temp, temp2;
 	unsigned short stemp;
@@ -102,6 +114,26 @@ bool Cpu::Step()
 	{
 		return false;
 	}
+
+	if (HandleInterrupt)
+	{
+		// An interrupt was requested.
+		// 1) Store PC to stack
+		// 2) Store status register to stack
+		// 3) Set interrupt disable bit in status register
+		// 4) Load PC from FFFE
+		// Then proceed normally.
+
+		HandleInterrupt = false;
+		Push(High(PC));
+		Push(Low(PC));
+		Push(P);
+		SetFlag(IFlag);
+		PC = Load16(0xFFFE);
+	}
+
+	instructionPC = PC;
+	SavedPC = PC;
 
 	instruction = LoadInstructionByte(); 
 
@@ -673,10 +705,12 @@ bool Cpu::Step()
 
 	case 0x58: TRACE_INSTRUCTION("CLI");
 		ClearFlag(IFlag);
+		CheckHandleInterrupt();
 		break;
 
 	case 0x78: TRACE_INSTRUCTION("SEI");
 		SetFlag(IFlag);
+		CheckHandleInterrupt();
 		break;
 
 	case 0x98: // Transfer Y to A
@@ -769,6 +803,24 @@ unsigned short Cpu::Load16(unsigned short Address)
 {
 	return (AttachedMemory->Read8(Address)) | (AttachedMemory->Read8(Address + 1) << 8);
 }
+
+void Cpu::CheckHandleInterrupt()
+{
+	if (P & IFlag)
+	{
+		// Interrupts are suppressed.
+		HandleInterrupt = false;
+	}
+	else
+	{
+		// Interrupts are enabled.
+		if (RequestedInterrupts != 0)
+		{
+			HandleInterrupt = true;
+		}
+	}
+}
+
 
 // Set N/Z based on result.
 void Cpu::SetResultFlags(unsigned char Result)

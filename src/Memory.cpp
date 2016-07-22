@@ -73,10 +73,14 @@ unsigned char CIAChip::Read8(int Address)
 	{
 	case 0: // PRA
 		PrevPRA = PRA; PrevPRB = PRB;
+		// Any unconnected bits by default float up to 1.
+		PRA |= ~DDRA;
 		if (CbRead) CbRead(this);
 		return PRA;
 	case 1: // PRB
 		PrevPRA = PRA; PrevPRB = PRB;
+		// Any unconnected bits by default float up to 1.
+		PRB |= ~DDRB;
 		if (CbRead) CbRead(this);
 		return PRB;
 	case 2: // DDRA

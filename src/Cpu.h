@@ -19,7 +19,13 @@ public:
 
 	unsigned short InstructionPC();
 
+	void RequestIrq(int sourceFlag);
+	void UnrequestIrq(int sourceFlag);
+
 protected:
+
+	int RequestedInterrupts;
+	bool HandleInterrupt;
 
 	unsigned short SavedPC; // Save the PC for the instruction currently being executed.
 
@@ -32,6 +38,8 @@ protected:
 
 	unsigned char Load(unsigned short Address);
 	unsigned short Load16(unsigned short Address);
+
+	void CheckHandleInterrupt();
 
 	void SetResultFlags(unsigned char Result);
 
