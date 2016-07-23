@@ -89,13 +89,15 @@ unsigned short Cpu::InstructionPC()
 	return SavedPC;
 }
 
-void Cpu::RequestIrq(int sourceFlag)
+void Cpu::RequestIrq(int sourceIndex)
 {
+	int sourceFlag = 1 << sourceIndex;
 	RequestedInterrupts |= sourceFlag;
 	CheckHandleInterrupt();
 }
-void Cpu::UnrequestIrq(int sourceFlag)
+void Cpu::UnrequestIrq(int sourceIndex)
 {
+	int sourceFlag = 1 << sourceIndex;
 	RequestedInterrupts &= ~sourceFlag;
 	CheckHandleInterrupt();
 }
@@ -119,7 +121,7 @@ bool Cpu::Step()
 	{
 		// An interrupt was requested.
 		// 1) Store PC to stack
-		// 2) Store status register to stack
+		// 2) Store status register to stack (Apparently as 16bit)
 		// 3) Set interrupt disable bit in status register
 		// 4) Load PC from FFFE
 		// Then proceed normally.
@@ -128,6 +130,7 @@ bool Cpu::Step()
 		Push(High(PC));
 		Push(Low(PC));
 		Push(P);
+		S--;
 		SetFlag(IFlag);
 		PC = Load16(0xFFFE);
 	}
@@ -151,6 +154,14 @@ bool Cpu::Step()
 		TRACE_INSTRUCTION(disasm);
 		break;
 
+	case 0x40: TRACE_INSTRUCTION("RTI"); // Return from interrupt
+		S++; // Apparently the processor has an empty word on the stack.
+		P = Pop();
+		temp = Pop();
+		temp2 = Pop();
+		SetLow(PC, temp);
+		SetHigh(PC, temp2);
+		break;
 
 	case 0x60: TRACE_INSTRUCTION("RTS"); // Return from subroutine
 		temp = Pop();
@@ -753,6 +764,12 @@ bool Cpu::Step()
 	case 0x9A: TRACE_INSTRUCTION("TXS"); // Transfer X to Stack register
 		S = X;
 		break;
+
+	case 0xBA: TRACE_INSTRUCTION("TSX"); // Transfer Stack register to X
+		X = S;
+		SetResultFlags(X);
+		break;
+
 
 	// 0x1D row (Absolute, X)
 

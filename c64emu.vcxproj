@@ -94,6 +94,7 @@
     <ClInclude Include="src\c64emu.h" />
     <ClInclude Include="src\Cpu.h" />
     <ClInclude Include="src\Emulation.h" />
+    <ClInclude Include="src\EmulationEvent.h" />
     <ClInclude Include="src\Keyboard.h" />
     <ClInclude Include="src\Memory.h" />
     <ClInclude Include="src\Video.h" />

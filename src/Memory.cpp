@@ -3,6 +3,7 @@
 #include "Memory.h"
 #include "Video.h"
 #include "Keyboard.h"
+#include "Emulation.h"
 #include <stdio.h>
 
 #define TRACE_IO_ACCESS 1
@@ -18,6 +19,10 @@ static void ignore_args(...)
 #define PRINT_IO ignore_args
 #endif
 
+CIAChip::CIAChip(int CpuInterruptSourceIndex) : evtTimerA(CallbackTimerA, this), evtTimerB(CallbackTimerB, this)
+{
+	InterruptSourceIndex = CpuInterruptSourceIndex;
+}
 
 void CIAChip::Setup(Memory* useMemory, FnPtrCiaCallback readFn, FnPtrCiaCallback writeFn)
 {
@@ -30,7 +35,14 @@ void CIAChip::Reset()
 {
 	PRA = PRB = 0;
 	DDRA = DDRB = 0;
+	TAValue = TBValue = 0;
+	TALatch = TBLatch = 0;
+	CRA = CRB = 0;
+	IntFlags = 0;
+	IntMask = 0;
+	MaskedFlags = 0;
 }
+
 
 void CIAChip::Write8(int Address, unsigned char Data8)
 {
@@ -53,17 +65,75 @@ void CIAChip::Write8(int Address, unsigned char Data8)
 		DDRB = Data8;
 		break;
 	case 4: // TA Lo
+		TALatch = (TALatch & 0xFF00) | Data8;
+		break;
 	case 5: // TA Hi
+		TALatch = (TALatch & 0xFF) | (Data8 << 8);
+		if ((CRA & CR_START) == 0)
+		{
+			TAValue = TALatch;
+		}
+		break;
 	case 6: // TB Lo
+		TBLatch = (TBLatch & 0xFF00) | Data8;
+		break;
 	case 7: // TB Hi
+		TBLatch = (TBLatch & 0xFF) | (Data8 << 8);
+		if ((CRB & CR_START) == 0)
+		{
+			TBValue = TBLatch;
+		}
+		break;
 	case 8: // TOD 10ths
 	case 9: // TOD Sec
 	case 10: // TOD Min
 	case 11: // TOD Hr
 	case 12: // SDR
+		break;
 	case 13: // ICR
+		if (Data8 & 0x80)
+		{
+			// Set interrupt mask bits
+			IntMask |= (Data8 & 0x1F);
+		}
+		else
+		{
+			// Clear interrupt mask bits
+			IntMask &= ~(Data8 & 0x1F);
+		}
+		UpdateInterruptStatus();
+		break;
+
 	case 14: // CRA
+		// If timer was running, Update its value.
+		if (CRA & CR_START)
+		{
+			UpdateTimerA();
+		}
+
+		if (Data8 & CR_LOAD)
+		{
+			TAValue = TALatch;
+		}
+
+		CRA = Data8 & (~CR_LOAD);
+		StartTimerA();
+		break;
+
 	case 15: // CRB
+		// If timer was running, Update its value.
+		if (CRA & CR_START)
+		{
+			UpdateTimerA();
+		}
+
+		if (Data8 & CR_LOAD)
+		{
+			TAValue = TALatch;
+		}
+
+		CRA = Data8 & (~CR_LOAD);
+		StartTimerA();
 		break;
 	}
 }
@@ -88,20 +158,212 @@ unsigned char CIAChip::Read8(int Address)
 	case 3: // DDRB
 		return DDRB;
 	case 4: // TA Lo
+		UpdateTimerA();
+		return TAValue & 0xFF;
 	case 5: // TA Hi
+		UpdateTimerA();
+		return TAValue >> 8;
 	case 6: // TB Lo
+		UpdateTimerB();
+		return TBValue & 0xFF;
 	case 7: // TB Hi
+		UpdateTimerB();
+		return TBValue >> 8;
 	case 8: // TOD 10ths
 	case 9: // TOD Sec
 	case 10: // TOD Min
 	case 11: // TOD Hr
 	case 12: // SDR
-	case 13: // ICR
-	case 14: // CRA
-	case 15: // CRB
 		break;
+	case 13: // ICR
+	{
+		unsigned char result = IntFlags;
+		// Reading this register clears the interrupt flags (stops pending interrupts)
+		IntFlags = 0;
+		UpdateInterruptStatus();
+		return result;
+	}
+	case 14: // CRA
+		return CRA;
+	case 15: // CRB
+		return CRB;
 	}
 	return 0xFF; // unimplemented.
+}
+
+void CIAChip::SetIntFlags(int flags)
+{
+	IntFlags |= flags;
+	UpdateInterruptStatus();
+}
+void CIAChip::ClearIntFlags(int flags)
+{
+	IntFlags &= (~flags);
+	UpdateInterruptStatus();
+}
+void CIAChip::UpdateInterruptStatus()
+{
+	int newMaskedFlags = IntFlags & IntMask;
+	if (newMaskedFlags != 0 && MaskedFlags == 0)
+	{
+		// Interrupt flag has been raised!
+		AttachedMemory->AttachedCpu->RequestIrq(InterruptSourceIndex);
+	}
+	if (newMaskedFlags == 0 && MaskedFlags != 0)
+	{
+		// Interrupt status has been cleared
+		AttachedMemory->AttachedCpu->UnrequestIrq(InterruptSourceIndex);
+	}
+	if (newMaskedFlags != 0)
+	{
+		// Mark interrupt flag to show interrupt has been requested.
+		IntFlags |= 0x80;
+	}
+	MaskedFlags = newMaskedFlags;
+}
+
+void CIAChip::UpdateTimerA()
+{
+	if (CRA & CR_START)
+	{
+		if ((CRA & CRA_INMODE) == 0) // use CLK for counting.
+		{
+			long long curCycle = AttachedMemory->AttachedCpu->Cycle;
+			int ElapsedCycles = curCycle - LastEventA;
+			AdvanceTimerA(ElapsedCycles);
+			LastEventA = curCycle;
+		}
+	}
+}
+void CIAChip::UpdateTimerB()
+{
+	if (CRB & CR_START)
+	{
+		if ((CRB & CRB_INMODE_MASK) == CRB_INMODE_CLK) // use CLK for counting.
+		{
+			long long curCycle = AttachedMemory->AttachedCpu->Cycle;
+			int ElapsedCycles = curCycle - LastEventB;
+
+		}
+	}
+}
+
+void CIAChip::AdvanceTimerA(int counts)
+{
+	if (counts > TAValue)
+	{
+		SetIntFlags(1); // Timer A interrupt, underflow.
+
+		if ((CRA & CR_RUNMODE) == 1)
+		{
+			// One-shot. Timer now reloads the latch value and stops.
+			TAValue = TALatch;
+			CRA &= ~(CR_START);
+			TimerAUnderflow(1);
+		}
+		else
+		{
+			// Continuous mode. Compute a new TAValue and proceed.
+			counts -= TAValue + 1; // How many additional cycles after the interrupt
+			int underflowcount = 1 + counts / (TALatch + 1);
+			TimerAUnderflow(underflowcount);
+
+			counts = counts % (TALatch + 1); // If it overflowed multiple times (unlikely) subtract multiples of the latch value.
+			TAValue = TALatch - counts; // New value accurate to the current cycle.
+		}
+	}
+	else
+	{
+		TAValue -= counts;
+	}
+}
+void CIAChip::AdvanceTimerB(int counts)
+{
+	if (counts > TBValue)
+	{
+		SetIntFlags(1); // Timer A interrupt, underflow.
+
+		if ((CRB & CR_RUNMODE) == 1)
+		{
+			// One-shot. Timer now reloads the latch value and stops.
+			TBValue = TBLatch;
+			CRB &= ~(CR_START);
+		}
+		else
+		{
+			// Continuous mode. Compute a new Value and proceed.
+			counts -= TBValue + 1; // How many additional cycles after the interrupt
+			counts = counts % (TBLatch + 1); // If it overflowed multiple times (unlikely) subtract multiples of the latch value.
+			TBValue = TBLatch - counts; // New value accurate to the current cycle.
+		}
+	}
+	else
+	{
+		TBValue -= counts;
+	}
+}
+
+
+
+void CIAChip::StartTimerA()
+{
+	if (CRA & CR_START)
+	{
+		if ((CRA & CRA_INMODE) == 0) // use CLK for counting
+		{
+			LastEventA = AttachedMemory->AttachedCpu->Cycle;
+
+			// Set callback for the time in the future when this timer will underflow.
+			long long underflowCycle = LastEventA + TAValue + 1;
+			AttachedMemory->AttachedEmulation->QueueEvent(underflowCycle, &evtTimerA);
+			return;
+		}
+	}
+	// Timer isn't running, remove any callback.
+	AttachedMemory->AttachedEmulation->CancelEvent(&evtTimerA);
+}
+void CIAChip::StartTimerB()
+{
+	if (CRB & CR_START)
+	{
+		if ((CRB & CRB_INMODE_MASK) == CRB_INMODE_CLK)
+		{
+			LastEventA = AttachedMemory->AttachedCpu->Cycle;
+
+			// Set callback for the time in the future when this timer will underflow.
+			long long underflowCycle = LastEventB + TBValue + 1;
+			AttachedMemory->AttachedEmulation->QueueEvent(underflowCycle, &evtTimerB);
+			return;
+		}
+	}
+	// Timer isn't running, remove any callback.
+	AttachedMemory->AttachedEmulation->CancelEvent(&evtTimerB);
+}
+
+void CIAChip::TimerAUnderflow(int count)
+{
+	// If timer B is counting pulses from timer A, advance timer B.
+	if (CRB & CR_START)
+	{
+		if ((CRB & CRB_INMODE_MASK) == CRB_INMODE_TA)
+		{
+			AdvanceTimerB(count);
+		}
+	}
+}
+
+
+void CIAChip::CallbackTimerA(EventRequest* Request)
+{
+	CIAChip* chip = (CIAChip*)Request->Context;
+	chip->UpdateTimerA();
+	chip->StartTimerA();
+}
+void CIAChip::CallbackTimerB(EventRequest* Request)
+{
+	CIAChip* chip = (CIAChip*)Request->Context;
+	chip->UpdateTimerB();
+	chip->StartTimerB();
 }
 
 
@@ -109,8 +371,7 @@ unsigned char CIAChip::Read8(int Address)
 
 
 
-
-Memory::Memory() : RAM(nullptr), Kernal(nullptr), Basic(nullptr), Char(nullptr)
+Memory::Memory() : RAM(nullptr), Kernal(nullptr), Basic(nullptr), Char(nullptr), CIA1(InterruptSourceCIA1), CIA2(InterruptSourceCIA2)
 {
 	RAM = new unsigned char[65536];
 

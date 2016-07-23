@@ -3,6 +3,13 @@
 
 class Memory;
 
+
+enum CpuInterruptSource
+{
+	InterruptSourceCIA1,
+	InterruptSourceCIA2
+};
+
 class Cpu
 {
 public:
@@ -19,8 +26,8 @@ public:
 
 	unsigned short InstructionPC();
 
-	void RequestIrq(int sourceFlag);
-	void UnrequestIrq(int sourceFlag);
+	void RequestIrq(int sourceIndex);
+	void UnrequestIrq(int sourceIndex);
 
 protected:
 
