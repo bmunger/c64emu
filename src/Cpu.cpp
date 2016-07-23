@@ -73,7 +73,7 @@ Cpu::~Cpu()
 void Cpu::Reset()
 {
 	A = 0;
-	P = 0;
+	P = OneFlag | BFlag;
 	S = 0xFF;
 	X = 0;
 	Y = 0;
@@ -121,16 +121,17 @@ bool Cpu::Step()
 	{
 		// An interrupt was requested.
 		// 1) Store PC to stack
-		// 2) Store status register to stack (Apparently as 16bit)
+		// 2) Store status register to stack
 		// 3) Set interrupt disable bit in status register
 		// 4) Load PC from FFFE
 		// Then proceed normally.
 
+		printf("PC=%04X: Interrupt A=%02X P=%02X S=%02X X=%02X Y=%02X (%lld)\n", PC, A, P, S, X, Y, Cycle);
+
 		HandleInterrupt = false;
 		Push(High(PC));
 		Push(Low(PC));
-		Push(P);
-		S--;
+		Push(P & (~BFlag));
 		SetFlag(IFlag);
 		PC = Load16(0xFFFE);
 	}
@@ -155,8 +156,7 @@ bool Cpu::Step()
 		break;
 
 	case 0x40: TRACE_INSTRUCTION("RTI"); // Return from interrupt
-		S++; // Apparently the processor has an empty word on the stack.
-		P = Pop();
+		P = Pop() | OneFlag | BFlag;
 		temp = Pop();
 		temp2 = Pop();
 		SetLow(PC, temp);
@@ -352,6 +352,15 @@ bool Cpu::Step()
 		SetResultFlags(X);
 		break;
 
+	case 0xC6: // Decrement (Zeropage)
+		temp = LoadInstructionByte();
+		TRACE_SPRINTF(disasm, "DEC $%02X", temp);
+		TRACE_INSTRUCTION(disasm);
+		temp2 = AttachedMemory->Read8(temp) - 1;
+		AttachedMemory->Write8(temp, temp2);
+		SetResultFlags(temp2);
+		break;
+
 	case 0xE6: // Increase (Zeropage)
 		temp = LoadInstructionByte();
 		TRACE_SPRINTF(disasm, "INC $%02X", temp);
@@ -368,7 +377,7 @@ bool Cpu::Step()
 		break;
 
 	case 0x28: TRACE_INSTRUCTION("PLP"); // Pull P
-		P = Pop() | OneFlag;
+		P = Pop() | OneFlag | BFlag;
 		break;
 
 	case 0x48: TRACE_INSTRUCTION("PHA"); // Push A
