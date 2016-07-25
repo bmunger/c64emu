@@ -22,4 +22,4 @@ public:
 	void* Context;
 };
 
-#endif;
+#endif
