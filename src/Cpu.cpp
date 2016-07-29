@@ -187,12 +187,10 @@ bool Cpu::Step()
 		break;
 
 	case 0xD0: //TRACE_INSTRUCTION("BNE");
-		temp = LoadInstructionByte();
-		stemp = PC + (char)temp;
-		if ((P&ZFlag) == 0)
+		stemp = (char)LoadInstructionByte();
+		stemp += PC;
+		if(!(P & ZFlag)) 
 		{
-			//temp = LoadInstructionByte();
-			//PC += (char)temp; // Signed offset
 			PC = stemp;
 		}
 		TRACE_SPRINTF(disasm, "BNE $%04X,X", stemp);
@@ -226,9 +224,18 @@ bool Cpu::Step()
 
 	case 0x24: // BIT (zeropage)
 		temp = LoadInstructionByte();
+		temp2 = Load(temp);
 		TRACE_SPRINTF(disasm, "BIT $%02X", temp);
 		TRACE_INSTRUCTION(disasm);
-		SetResultFlags(A & Load(temp));
+		SetResultFlags(temp2);
+		if(temp2 & VFlag)
+			P |= VFlag;
+		else
+			P &= ~VFlag;
+		if(temp2 & A)
+			P |= ZFlag;
+		else
+			P &= ~ZFlag;
 		break;
 
 	case 0xA4: // Load Y
@@ -286,7 +293,7 @@ bool Cpu::Step()
 		TRACE_INSTRUCTION(disasm);
 		break;
 
-	case 0xA5: // Load A
+	case 0xA5: // Load A (Zeropage)
 		temp = LoadInstructionByte();
 		TRACE_SPRINTF(disasm, "LDA $%02X", temp);
 		TRACE_INSTRUCTION(disasm);
@@ -298,7 +305,7 @@ bool Cpu::Step()
 		temp = LoadInstructionByte();
 		TRACE_SPRINTF(disasm, "CMP $%02X", temp);
 		TRACE_INSTRUCTION(disasm);
-		SetResultFlags(Sub(A, AttachedMemory->Read8(temp), 0));
+		Sub(A, AttachedMemory->Read8(temp), 0);
 		break;
 
 	case 0xE5: // Subtract with Carry (Zeropage)
@@ -474,7 +481,7 @@ bool Cpu::Step()
 	case 0x89: TRACE_INSTRUCTION("NOP"); // Undocumented NOP
 		break;
 
-	case 0xA9: //Load Accumulator
+	case 0xA9: // Load Accumulator (Immediate)
 		A = LoadInstructionByte();
 		TRACE_SPRINTF(disasm, "LDA #$%02X", A);
 		TRACE_INSTRUCTION(disasm);
@@ -484,7 +491,7 @@ bool Cpu::Step()
 		temp = LoadInstructionByte();
 		TRACE_SPRINTF(disasm, "CMP #$%02X", temp);
 		TRACE_INSTRUCTION(disasm);
-		SetResultFlags(Sub(A, temp, 0));
+		Sub(A, temp, 0);
 		break;
 
 	case 0xE9: // Subtract With Carry
@@ -560,6 +567,10 @@ bool Cpu::Step()
 		SetResultFlags(X);
 		break;
 
+	case 0xEA: // NOP (Implied)
+		TRACE_INSTRUCTION("NOP");
+		break;
+
 	// 0x0C row
 
 	case 0x2C: // Bit test (absolute)
@@ -622,7 +633,7 @@ bool Cpu::Step()
 		TRACE_INSTRUCTION(disasm);
 		break;
 
-	case 0xAD: // Load A
+	case 0xAD: // Load A (Absolute)
 		stemp = LoadInstructionShort();
 		TRACE_SPRINTF(disasm, "LDA $%04X", stemp);
 		TRACE_INSTRUCTION(disasm);
@@ -658,6 +669,15 @@ bool Cpu::Step()
 		TRACE_SPRINTF(disasm, "DEC $%04X", stemp);
 		TRACE_INSTRUCTION(disasm);
 		temp2 = AttachedMemory->Read8(stemp) - 1;
+		AttachedMemory->Write8(stemp, temp2);
+		SetResultFlags(temp2);
+		break;
+
+	case 0xEE: // Increase (Absolute)
+		stemp = LoadInstructionShort();
+		TRACE_SPRINTF(disasm, "INC $%04X", stemp);
+		TRACE_INSTRUCTION(disasm);
+		temp2 = AttachedMemory->Read8(stemp) + 1;
 		AttachedMemory->Write8(stemp, temp2);
 		SetResultFlags(temp2);
 		break;
@@ -714,7 +734,8 @@ bool Cpu::Step()
 		stemp += PC;
 		TRACE_SPRINTF(disasm, "BEQ $%04X", stemp);
 		TRACE_INSTRUCTION(disasm);
-		if ( (P&ZFlag) == ZFlag)
+		//if ( (P&ZFlag) == ZFlag)
+		if(P & ZFlag)
 			PC = stemp;
 		break;
 
@@ -778,7 +799,7 @@ bool Cpu::Step()
 		AttachedMemory->Write8(temp + X, A);
 		break;
 
-	case 0xB5: // Load A
+	case 0xB5: // Load A (Zeropage,X)
 		temp = LoadInstructionByte();
 		TRACE_SPRINTF(disasm, "LDA $%02X,X", temp);
 		TRACE_INSTRUCTION(disasm);
@@ -886,7 +907,7 @@ bool Cpu::Step()
 		AttachedMemory->Write8(stemp + Y, A);
 		break;
 
-	case 0xB9: // Load A
+	case 0xB9: // Load A (Absolute,Y)
 		stemp = LoadInstructionShort();
 		TRACE_SPRINTF(disasm, "LDA $%04X,Y", stemp);
 		TRACE_INSTRUCTION(disasm);
