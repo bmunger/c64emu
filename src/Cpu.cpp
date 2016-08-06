@@ -331,6 +331,22 @@ bool Cpu::Step()
 		SetResultFlags(temp2 << 1);
 		break;
 
+	case 0x26: // Rotate Left (Zeropage)
+		temp = LoadInstructionByte();
+		TRACE_SPRINTF(disasm, "ROL $%02X", temp);
+		TRACE_INSTRUCTION(disasm);
+		temp2 = Load(temp);
+		temp3 = temp2 & 0x80;
+		if((P & CFlag) != 0)
+			temp2 |= 0x1;
+		if((temp2 & 0x80) != 0)
+			P |= CFlag;
+		else
+			P &= ~CFlag;
+		AttachedMemory->Write8(temp, temp2);
+		SetResultFlags(temp2);
+		break;
+
 	case 0x46: // Logic Shift Right (Zeropage)
 		temp = LoadInstructionByte();
 		TRACE_SPRINTF(disasm, "LSR $%02X", temp);
