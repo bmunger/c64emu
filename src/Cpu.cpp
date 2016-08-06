@@ -312,7 +312,6 @@ bool Cpu::Step()
 		TRACE_SPRINTF(disasm, "SBC $%02X", temp);
 		TRACE_INSTRUCTION(disasm);
 		A = Sub(A, Load(temp), 1);
-		SetResultFlags(A);
 		break;
 
 	// 0x06 row
@@ -356,7 +355,7 @@ bool Cpu::Step()
 		TRACE_SPRINTF(disasm, "ROR $%02X", temp);
 		TRACE_INSTRUCTION(disasm);
 		temp2 = Load(temp);
-		temp3 = A & 0x1;
+		temp3 = temp2 & 0x1;
 		temp2 = (temp2 >> 1) & 0xFF;
 		if((P & CFlag) != 0)
 			temp2 |= 0x80;
@@ -490,6 +489,7 @@ bool Cpu::Step()
 		TRACE_SPRINTF(disasm, "LDA #$%02X", temp);
 		TRACE_INSTRUCTION(disasm);
 		A = temp;
+		SetResultFlags(A);
 		break;
 
 	case 0xC9: // Compare A (Immediate)
@@ -504,7 +504,6 @@ bool Cpu::Step()
 		TRACE_SPRINTF(disasm, "SBC #$%02X", temp);
 		TRACE_INSTRUCTION(disasm);
 		A = Sub(A, temp, 1);
-		SetResultFlags(A);
 		break;
 
 	// 0x0A row
@@ -602,7 +601,7 @@ bool Cpu::Step()
 		stemp = LoadInstructionShort();
 		TRACE_SPRINTF(disasm, "LDY $%04X", stemp);
 		TRACE_INSTRUCTION(disasm);
-		Y = Load16(stemp);
+		Y = Load(stemp);
 		SetResultFlags(Y);
 		break;
 
@@ -657,7 +656,7 @@ bool Cpu::Step()
 		stemp = LoadInstructionShort();
 		TRACE_SPRINTF(disasm, "LDX $%04X", stemp);
 		TRACE_INSTRUCTION(disasm);
-		X = Load16(stemp);
+		X = Load(stemp);
 		SetResultFlags(X);
 		break;
 
@@ -742,7 +741,6 @@ bool Cpu::Step()
 		TRACE_SPRINTF(disasm, "ADC ($%02X),Y", temp);
 		TRACE_INSTRUCTION(disasm);
 		A = Add(A, LoadIndirectY(temp), 1);
-		SetResultFlags(A);
 		break;
 
 	case 0x91: // Store A (Indirect-indexed)
@@ -837,6 +835,15 @@ bool Cpu::Step()
 		SetResultFlags(temp2);
 		break;
 
+	case 0xF6: // Increment (Zeropage,X)
+		temp = LoadInstructionByte();
+		TRACE_SPRINTF(disasm, "INC $%02X,X", temp);
+		TRACE_INSTRUCTION(disasm);
+		temp2 = Load(temp + X) + 1;
+		AttachedMemory->Write8(temp + X, temp2);
+		SetResultFlags(temp2);
+		break;
+
 	// 0x18 row
 
 	case 0x18: TRACE_INSTRUCTION("CLC");
@@ -882,7 +889,6 @@ bool Cpu::Step()
 		TRACE_SPRINTF(disasm, "ADC $%04X,Y", stemp);
 		TRACE_INSTRUCTION(disasm);
 		A = Add(A, Load(stemp + Y), 1);
-		SetResultFlags(A);
 		break;
 
 	case 0x99:
@@ -1026,7 +1032,7 @@ unsigned char Cpu::Add(unsigned char Add1, unsigned char Add2, int Carry)
 	// Preserve information so we can identify the carry into and carry out of the top bit.
 	int c = 0;
 	if (Carry != 0)
-		c = (P&CFlag) == 0 ? 0 : Carry; // Todo: this probably needs to change slightly for borrow.
+		c = (P&CFlag) == 0 ? 0 : 1;
 
 	int temp1 = (Add1 & 0x7F) + (Add2 & 0x7F) + c; // Carry in is temp1 & 0x80
 	int temp2 = Add1 + Add2 + c; // Carry out is temp2 & 0x100
@@ -1038,6 +1044,7 @@ unsigned char Cpu::Add(unsigned char Add1, unsigned char Add2, int Carry)
 	{
 		P |= ZFlag;
 	}
+	//if (Carry < 0) temp2 ^= 0x100;
 	if (temp2 & 0x100) // Carry out
 	{
 		P |= CFlag;
@@ -1059,7 +1066,38 @@ unsigned char Cpu::Add(unsigned char Add1, unsigned char Add2, int Carry)
 // Subtract 2 8-bit numbers and set flags
 unsigned char Cpu::Sub(unsigned char Sub1, unsigned char Sub2, int Carry)
 {
-	return Add(Sub1, -Sub2, -Carry);
+	// Preserve information so we can identify the carry into and carry out of the top bit.
+	int b = 0;
+	if (Carry != 0)
+		b = (P&CFlag) == 0 ? 1 : 0;
+
+	int temp1 = (Sub1 & 0x7F) - (Sub2 & 0x7F) - b; // Carry in is temp1 & 0x80
+	int temp2 = Sub1 - Sub2 - b; // Carry out is temp2 & 0x100
+	unsigned char Result = temp2 & 0xFF;
+
+	P = P & ~(ZFlag | NFlag | CFlag);
+	P |= (Result & 0x80); // N flag
+	if (Result == 0)
+	{
+		P |= ZFlag;
+	}
+	if (!(temp2 & 0x100)) // Carry out
+	{
+		P |= CFlag;
+	}
+
+	if (Carry != 0)
+	{
+		// Also set overflow flag
+		P &= ~VFlag;
+		temp1 = (temp1 & 0x80) >> 7;
+		temp2 = (temp2 & 0x100) >> 8;
+		if (temp1 != temp2)
+		{
+			P |= VFlag;
+		}
+	}
+	return Result;
 }
 
 void Cpu::SetFlag(unsigned char Flag, bool value)
