@@ -43,6 +43,12 @@ protected:
 	unsigned char X; // Index register X
 	unsigned char Y; // Index register Y
 
+	unsigned char LoadIndirectX(unsigned char param);
+	void StoreIndirectX(unsigned char param, unsigned char storeValue);
+
+	unsigned char LoadIndirectY(unsigned char param);
+	void StoreIndirectY(unsigned char param, unsigned char storeValue);
+
 	unsigned char Load(unsigned short Address);
 	unsigned short Load16(unsigned short Address);
 
@@ -53,8 +59,7 @@ protected:
 	unsigned char Add(unsigned char Add1, unsigned char Add2, int Carry);
 	unsigned char Sub(unsigned char Sub1, unsigned char Sub2, int Carry);
 
-	void SetFlag(unsigned char Flag);
-	void ClearFlag(unsigned char Flag);
+	void SetFlag(unsigned char Flag, bool value);
 
 	unsigned char Low(unsigned short Reg);
 	unsigned char High(unsigned short Reg);
